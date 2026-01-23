@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/jss826/cctasks/internal/data"
 	"github.com/jss826/cctasks/internal/ui"
@@ -447,38 +448,50 @@ func (m *TasksModel) renderGroupHeader(groupName string, selected bool) string {
 }
 
 func (m *TasksModel) renderTaskItem(task *data.Task, selected bool) string {
-	prefix := "    "
-	style := ui.TaskItemStyle
+	prefix := "  "
 	if selected {
-		prefix = "  > "
-		style = ui.TaskSelectedStyle
+		prefix = "> "
 	}
 
 	statusIcon := data.StatusIcon(task.Status)
 	statusStyle := ui.GetStatusStyle(task.Status)
+	statusBadge := statusStyle.Render(fmt.Sprintf("[%s]", task.Status))
 
-	// Format: prefix + icon + #ID + subject + [status]
-	maxSubjectLen := m.width - 40
+	// Calculate available width for subject
+	statusWidth := lipgloss.Width(statusBadge)
+	maxSubjectLen := m.width - 25 - statusWidth
 	if maxSubjectLen < 20 {
 		maxSubjectLen = 20
 	}
 	subject := ui.Truncate(task.Subject, maxSubjectLen)
 
-	line := fmt.Sprintf("%s%s #%s %s",
+	// Build left part (without styling yet)
+	leftContent := fmt.Sprintf("%s%s #%s %s",
 		prefix,
 		statusStyle.Render(statusIcon),
 		task.ID,
 		subject,
 	)
 
-	// Add status badge at the end
-	statusBadge := statusStyle.Render(fmt.Sprintf("[%s]", task.Status))
-	padding := m.width - len(line) - len(task.Status) - 10
-	if padding > 0 {
-		line += strings.Repeat(" ", padding) + statusBadge
+	// Calculate padding using lipgloss.Width for accurate measurement
+	leftWidth := lipgloss.Width(leftContent)
+	totalWidth := m.width - 8
+	if totalWidth < 60 {
+		totalWidth = 80
+	}
+	padding := totalWidth - leftWidth - statusWidth
+	if padding < 1 {
+		padding = 1
 	}
 
-	result := style.Render(line)
+	line := leftContent + strings.Repeat(" ", padding) + statusBadge
+
+	var result string
+	if selected {
+		result = ui.TaskSelectedStyle.Render(line)
+	} else {
+		result = ui.TaskItemStyle.Render(line)
+	}
 
 	// Add blocked by indicator
 	if len(task.BlockedBy) > 0 {
