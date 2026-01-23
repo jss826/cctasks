@@ -1,6 +1,7 @@
 # Binaries
 cctasks
 cctasks.exe
+cctasks-*
 *.exe
 *.exe~
 *.dll
