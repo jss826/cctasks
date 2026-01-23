@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jss826/cctasks/internal/config"
 )
@@ -29,6 +30,8 @@ type Task struct {
 type TaskStore struct {
 	ProjectName string
 	Tasks       []Task
+	projectDir  string    // cached project directory path
+	lastModTime time.Time // last modification time of project directory
 }
 
 // Project represents a project with task count
@@ -118,9 +121,17 @@ func LoadTasks(projectName string) (*TaskStore, error) {
 			return &TaskStore{
 				ProjectName: projectName,
 				Tasks:       []Task{},
+				projectDir:  projectDir,
 			}, nil
 		}
 		return nil, err
+	}
+
+	// Get directory modification time
+	dirInfo, err := os.Stat(projectDir)
+	var modTime time.Time
+	if err == nil {
+		modTime = dirInfo.ModTime()
 	}
 
 	var tasks []Task
@@ -157,6 +168,8 @@ func LoadTasks(projectName string) (*TaskStore, error) {
 	return &TaskStore{
 		ProjectName: projectName,
 		Tasks:       tasks,
+		projectDir:  projectDir,
+		lastModTime: modTime,
 	}, nil
 }
 
@@ -196,6 +209,18 @@ func (s *TaskStore) saveTask(task Task) error {
 	}
 
 	return os.WriteFile(filePath, data, 0644)
+}
+
+// NeedsReload checks if the project directory has been modified since last load
+func (s *TaskStore) NeedsReload() bool {
+	if s.projectDir == "" {
+		return false
+	}
+	dirInfo, err := os.Stat(s.projectDir)
+	if err != nil {
+		return false
+	}
+	return dirInfo.ModTime().After(s.lastModTime)
 }
 
 // GetTask returns a task by ID

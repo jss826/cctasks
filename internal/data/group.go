@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"github.com/jss826/cctasks/internal/config"
 )
@@ -20,6 +21,8 @@ type TaskGroup struct {
 type GroupStore struct {
 	ProjectName string
 	Groups      []TaskGroup
+	filePath    string    // cached file path
+	lastModTime time.Time // last modification time
 }
 
 // groupsFile represents the JSON structure of _groups.json
@@ -52,9 +55,17 @@ func LoadGroups(projectName string) (*GroupStore, error) {
 			return &GroupStore{
 				ProjectName: projectName,
 				Groups:      []TaskGroup{},
+				filePath:    groupsFilePath,
 			}, nil
 		}
 		return nil, err
+	}
+
+	// Get file modification time
+	fileInfo, err := os.Stat(groupsFilePath)
+	var modTime time.Time
+	if err == nil {
+		modTime = fileInfo.ModTime()
 	}
 
 	var gf groupsFile
@@ -70,6 +81,8 @@ func LoadGroups(projectName string) (*GroupStore, error) {
 	return &GroupStore{
 		ProjectName: projectName,
 		Groups:      gf.Groups,
+		filePath:    groupsFilePath,
+		lastModTime: modTime,
 	}, nil
 }
 
@@ -93,6 +106,18 @@ func (s *GroupStore) Save() error {
 	}
 
 	return os.WriteFile(groupsFilePath, data, 0644)
+}
+
+// NeedsReload checks if the groups file has been modified since last load
+func (s *GroupStore) NeedsReload() bool {
+	if s.filePath == "" {
+		return false
+	}
+	fileInfo, err := os.Stat(s.filePath)
+	if err != nil {
+		return false
+	}
+	return fileInfo.ModTime().After(s.lastModTime)
 }
 
 // GetGroup returns a group by name

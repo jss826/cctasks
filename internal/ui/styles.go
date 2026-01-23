@@ -4,23 +4,23 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Tokyo Night Colors
+// Tokyo Night Light variant
 var (
-	Primary     = lipgloss.Color("#bb9af7") // purple
+	Primary     = lipgloss.Color("#9d7cd8") // purple (softer)
 	Secondary   = lipgloss.Color("#7aa2f7") // blue
 	Success     = lipgloss.Color("#9ece6a") // green
 	Warning     = lipgloss.Color("#e0af68") // yellow
 	Danger      = lipgloss.Color("#f7768e") // red
-	Muted       = lipgloss.Color("#565f89") // comment gray
-	Background  = lipgloss.Color("#1a1b26") // background
+	Muted       = lipgloss.Color("#9aa5ce") // comment gray (much brighter)
+	Background  = lipgloss.Color("#2f3549") // background (lighter)
 	Foreground  = lipgloss.Color("#c0caf5") // foreground
-	BorderColor = lipgloss.Color("#33467c") // selection
+	BorderColor = lipgloss.Color("#6b7089") // selection (brighter)
 	Cyan        = lipgloss.Color("#7dcfff") // cyan
 )
 
-// Status colors - Tokyo Night
+// Status colors
 var (
-	PendingColor    = lipgloss.Color("#565f89") // muted
+	PendingColor    = lipgloss.Color("#9aa5ce") // muted (brighter)
 	InProgressColor = lipgloss.Color("#7aa2f7") // blue
 	CompletedColor  = lipgloss.Color("#9ece6a") // green
 )
@@ -31,12 +31,11 @@ var (
 	AppStyle = lipgloss.NewStyle().
 			Padding(1, 2)
 
-	// Title bar
+	// Title bar (softer, no heavy background)
 	TitleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(Foreground).
-			Background(Primary).
-			Padding(0, 2)
+			Foreground(Primary).
+			Padding(0, 0)
 
 	// Subtitle
 	SubtitleStyle = lipgloss.NewStyle().
@@ -64,7 +63,7 @@ var (
 
 	// Disabled text (darker than muted)
 	DisabledStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#3b3f51"))
+			Foreground(lipgloss.Color("#6b7089"))
 
 	// Help text
 	HelpStyle = lipgloss.NewStyle().

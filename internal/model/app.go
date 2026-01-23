@@ -85,6 +85,29 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, tea.Quit
 		}
 
+		// Auto-reload on any key press if data has changed
+		if a.projectName != "" && a.taskStore != nil {
+			needsReload := a.taskStore.NeedsReload()
+			if a.groupStore != nil && a.groupStore.NeedsReload() {
+				needsReload = true
+			}
+			if needsReload {
+				a.taskStore, _ = data.LoadTasks(a.projectName)
+				a.groupStore, _ = data.LoadGroups(a.projectName)
+				// Update current screen's data
+				switch a.screen {
+				case ScreenTasks:
+					a.tasks = NewTasksModel(a.projectName, a.taskStore, a.groupStore)
+					a.tasks.width = a.width
+					a.tasks.height = a.height
+				case ScreenGroups:
+					a.groups = NewGroupsModel(a.groupStore)
+					a.groups.width = a.width
+					a.groups.height = a.height
+				}
+			}
+		}
+
 	case SelectProjectMsg:
 		a.projectName = msg.Name
 		var err error
