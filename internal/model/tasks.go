@@ -50,18 +50,19 @@ func NewTasksModel(projectName string, taskStore *data.TaskStore, groupStore *da
 	ti.CharLimit = 50
 	ti.Width = 30
 
-	return TasksModel{
+	m := TasksModel{
 		projectName:     projectName,
 		taskStore:       taskStore,
 		groupStore:      groupStore,
 		searchInput:     ti,
 		collapsedGroups: make(map[string]bool),
 	}
+	m.rebuildItems()
+	return m
 }
 
 // Init initializes the model
 func (m TasksModel) Init() tea.Cmd {
-	m.rebuildItems()
 	return nil
 }
 
