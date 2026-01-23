@@ -1,7 +1,8 @@
 package model
 
 import (
-	"github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/jss826/cctasks/internal/data"
 )
@@ -77,12 +78,16 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.groups.height = msg.Height
 		a.groupEdit.width = msg.Width
 		a.groupEdit.height = msg.Height
-		return a, nil
+		// Force clear screen on resize
+		return a, func() tea.Msg { return tea.ClearScreen() }
 
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return a, tea.Quit
+		case "ctrl+l":
+			// Manual screen refresh
+			return a, func() tea.Msg { return tea.ClearScreen() }
 		}
 
 		// Auto-reload on any key press if data has changed
@@ -254,26 +259,34 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the application
 func (a App) View() string {
+	var content string
+
 	if a.err != nil {
-		return "Error: " + a.err.Error()
+		content = "Error: " + a.err.Error()
+	} else {
+		switch a.screen {
+		case ScreenProjects:
+			content = a.projects.View()
+		case ScreenTasks:
+			content = a.tasks.View()
+		case ScreenDetail:
+			content = a.detail.View()
+		case ScreenEdit:
+			content = a.edit.View()
+		case ScreenGroups:
+			content = a.groups.View()
+		case ScreenGroupEdit:
+			content = a.groupEdit.View()
+		default:
+			content = "Unknown screen"
+		}
 	}
 
-	switch a.screen {
-	case ScreenProjects:
-		return a.projects.View()
-	case ScreenTasks:
-		return a.tasks.View()
-	case ScreenDetail:
-		return a.detail.View()
-	case ScreenEdit:
-		return a.edit.View()
-	case ScreenGroups:
-		return a.groups.View()
-	case ScreenGroupEdit:
-		return a.groupEdit.View()
-	default:
-		return "Unknown screen"
+	// Place content in fixed-size frame to prevent screen artifacts
+	if a.width > 0 && a.height > 0 {
+		return lipgloss.Place(a.width, a.height, lipgloss.Left, lipgloss.Top, content)
 	}
+	return content
 }
 
 // Messages for screen transitions

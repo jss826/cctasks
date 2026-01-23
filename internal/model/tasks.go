@@ -401,6 +401,7 @@ func (m TasksModel) View() string {
 		{Key: "f", Desc: "Filter", Enabled: true},
 		{Key: "G", Desc: "Groups", Enabled: true},
 		{Key: "/", Desc: "Search", Enabled: true},
+		{Key: "Ctrl+L", Desc: "Redraw", Enabled: true},
 		{Key: "p", Desc: "Projects", Enabled: true},
 		{Key: "q", Desc: "Quit", Enabled: true},
 	}

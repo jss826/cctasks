@@ -187,6 +187,7 @@ func (m GroupsModel) View() string {
 		{"n", "New"},
 		{"d", "Delete"},
 		{"K/J", "Reorder"},
+		{"Ctrl+L", "Redraw"},
 		{"Esc", "Back"},
 	}
 	b.WriteString(ui.Footer(keys, m.width))

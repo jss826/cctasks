@@ -153,6 +153,7 @@ func (m ProjectsModel) View() string {
 	keys := [][]string{
 		{"Enter", "Select"},
 		{"r", "Refresh"},
+		{"Ctrl+L", "Redraw"},
 		{"?", "Help"},
 		{"q", "Quit"},
 	}

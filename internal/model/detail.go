@@ -210,6 +210,7 @@ func (m DetailModel) View() string {
 			{Key: "e", Desc: "Edit", Enabled: true},
 			{Key: "s", Desc: "Cycle Status", Enabled: true},
 			{Key: "d", Desc: "Delete", Enabled: true},
+			{Key: "Ctrl+L", Desc: "Redraw", Enabled: true},
 			{Key: "q", Desc: "Quit", Enabled: true},
 		}
 		b.WriteString(ui.FooterWithHints(hints, m.width))

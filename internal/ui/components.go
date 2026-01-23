@@ -13,7 +13,7 @@ func Header(title string, width int) string {
 	return titleText + "\n" + HorizontalLine(width)
 }
 
-// Footer renders the help footer
+// Footer renders the help footer with auto line wrapping
 func Footer(keys [][]string, width int) string {
 	var parts []string
 	for _, pair := range keys {
@@ -21,7 +21,29 @@ func Footer(keys [][]string, width int) string {
 		desc := MutedStyle.Render(pair[1])
 		parts = append(parts, fmt.Sprintf("%s %s", key, desc))
 	}
-	return HorizontalLine(width) + "\n" + strings.Join(parts, "  ")
+
+	// Wrap parts into lines based on width
+	var lines []string
+	var currentLine string
+	for i, part := range parts {
+		partWidth := lipgloss.Width(part)
+		currentWidth := lipgloss.Width(currentLine)
+
+		if currentLine == "" {
+			currentLine = part
+		} else if currentWidth+2+partWidth <= width {
+			currentLine += "  " + part
+		} else {
+			lines = append(lines, currentLine)
+			currentLine = part
+		}
+
+		if i == len(parts)-1 && currentLine != "" {
+			lines = append(lines, currentLine)
+		}
+	}
+
+	return HorizontalLine(width) + "\n" + strings.Join(lines, "\n")
 }
 
 // KeyHint represents a key binding with enabled state
@@ -31,7 +53,7 @@ type KeyHint struct {
 	Enabled bool
 }
 
-// FooterWithHints renders help footer with disabled keys grayed out
+// FooterWithHints renders help footer with disabled keys grayed out and auto line wrapping
 func FooterWithHints(hints []KeyHint, width int) string {
 	var parts []string
 	for _, hint := range hints {
@@ -46,7 +68,29 @@ func FooterWithHints(hints []KeyHint, width int) string {
 			parts = append(parts, fmt.Sprintf("%s %s", key, desc))
 		}
 	}
-	return HorizontalLine(width) + "\n" + strings.Join(parts, "  ")
+
+	// Wrap parts into lines based on width
+	var lines []string
+	var currentLine string
+	for i, part := range parts {
+		partWidth := lipgloss.Width(part)
+		currentWidth := lipgloss.Width(currentLine)
+
+		if currentLine == "" {
+			currentLine = part
+		} else if currentWidth+2+partWidth <= width {
+			currentLine += "  " + part
+		} else {
+			lines = append(lines, currentLine)
+			currentLine = part
+		}
+
+		if i == len(parts)-1 && currentLine != "" {
+			lines = append(lines, currentLine)
+		}
+	}
+
+	return HorizontalLine(width) + "\n" + strings.Join(lines, "\n")
 }
 
 // StatusBadge renders a status badge with icon
