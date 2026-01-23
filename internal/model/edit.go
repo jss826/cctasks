@@ -44,21 +44,25 @@ func NewEditModel(task *data.Task, taskStore *data.TaskStore, groupStore *data.G
 	subjectInput := textinput.New()
 	subjectInput.Placeholder = "Task subject"
 	subjectInput.CharLimit = 200
-	subjectInput.Width = 50
+	subjectInput.Width = 60
+	subjectInput.Prompt = "> "
 	subjectInput.Focus()
 
 	// Description input
 	descInput := textarea.New()
 	descInput.Placeholder = "Task description..."
 	descInput.CharLimit = 2000
-	descInput.SetWidth(50)
-	descInput.SetHeight(5)
+	descInput.SetWidth(60)
+	descInput.SetHeight(4)
+	descInput.ShowLineNumbers = false
+	descInput.Prompt = "  "
 
 	// Owner input
 	ownerInput := textinput.New()
 	ownerInput.Placeholder = "Owner (optional)"
 	ownerInput.CharLimit = 50
-	ownerInput.Width = 30
+	ownerInput.Width = 40
+	ownerInput.Prompt = "> "
 
 	// Statuses
 	statuses := []string{"pending", "in_progress", "completed"}
@@ -240,59 +244,49 @@ func (m EditModel) View() string {
 	b.WriteString("\n\n")
 
 	// Subject field
-	subjectLabel := ui.InputLabelStyle.Render("Subject:")
 	if m.focusIdx == 0 {
-		subjectLabel = ui.SelectedStyle.Render("Subject:")
-	}
-	b.WriteString(subjectLabel)
-	b.WriteString("\n")
-	if m.focusIdx == 0 {
-		b.WriteString(ui.FocusedInputStyle.Render(m.subjectInput.View()))
+		b.WriteString(ui.SelectedStyle.Render("Subject:"))
 	} else {
-		b.WriteString(ui.InputStyle.Render(m.subjectInput.View()))
+		b.WriteString(ui.InputLabelStyle.Render("Subject:"))
 	}
+	b.WriteString("\n")
+	b.WriteString(m.subjectInput.View())
 	b.WriteString("\n\n")
 
 	// Description field
-	descLabel := ui.InputLabelStyle.Render("Description:")
 	if m.focusIdx == 1 {
-		descLabel = ui.SelectedStyle.Render("Description:")
-	}
-	b.WriteString(descLabel)
-	b.WriteString("\n")
-	if m.focusIdx == 1 {
-		b.WriteString(ui.FocusedInputStyle.Render(m.descInput.View()))
+		b.WriteString(ui.SelectedStyle.Render("Description:"))
 	} else {
-		b.WriteString(ui.InputStyle.Render(m.descInput.View()))
+		b.WriteString(ui.InputLabelStyle.Render("Description:"))
 	}
+	b.WriteString("\n")
+	b.WriteString(m.descInput.View())
 	b.WriteString("\n\n")
 
 	// Status selector
-	statusLabel := ui.InputLabelStyle.Render("Status:")
 	if m.focusIdx == 2 {
-		statusLabel = ui.SelectedStyle.Render("Status:")
+		b.WriteString(ui.SelectedStyle.Render("Status:"))
+	} else {
+		b.WriteString(ui.InputLabelStyle.Render("Status:"))
 	}
-	b.WriteString(statusLabel)
 	b.WriteString(" ")
 
 	statusText := m.statuses[m.statusIdx]
 	statusIcon := ui.StatusIcon(statusText)
 	statusStyle := ui.GetStatusStyle(statusText)
-	statusDisplay := statusStyle.Render(fmt.Sprintf("%s %s", statusIcon, statusText))
-
 	if m.focusIdx == 2 {
-		b.WriteString(ui.FocusedInputStyle.Render(statusDisplay + " ▼"))
+		b.WriteString(statusStyle.Render(fmt.Sprintf("[%s %s] ↑↓", statusIcon, statusText)))
 	} else {
-		b.WriteString(ui.InputStyle.Render(statusDisplay))
+		b.WriteString(statusStyle.Render(fmt.Sprintf(" %s %s", statusIcon, statusText)))
 	}
 	b.WriteString("\n\n")
 
 	// Group selector
-	groupLabel := ui.InputLabelStyle.Render("Group:")
 	if m.focusIdx == 3 {
-		groupLabel = ui.SelectedStyle.Render("Group:")
+		b.WriteString(ui.SelectedStyle.Render("Group:"))
+	} else {
+		b.WriteString(ui.InputLabelStyle.Render("Group:"))
 	}
-	b.WriteString(groupLabel)
 	b.WriteString(" ")
 
 	groupText := "(none)"
@@ -301,24 +295,20 @@ func (m EditModel) View() string {
 	}
 
 	if m.focusIdx == 3 {
-		b.WriteString(ui.FocusedInputStyle.Render(groupText + " ▼"))
+		b.WriteString(fmt.Sprintf("[%s] ↑↓", groupText))
 	} else {
-		b.WriteString(ui.InputStyle.Render(groupText))
+		b.WriteString(fmt.Sprintf(" %s", groupText))
 	}
 	b.WriteString("\n\n")
 
 	// Owner field
-	ownerLabel := ui.InputLabelStyle.Render("Owner:")
 	if m.focusIdx == 4 {
-		ownerLabel = ui.SelectedStyle.Render("Owner:")
-	}
-	b.WriteString(ownerLabel)
-	b.WriteString("\n")
-	if m.focusIdx == 4 {
-		b.WriteString(ui.FocusedInputStyle.Render(m.ownerInput.View()))
+		b.WriteString(ui.SelectedStyle.Render("Owner:"))
 	} else {
-		b.WriteString(ui.InputStyle.Render(m.ownerInput.View()))
+		b.WriteString(ui.InputLabelStyle.Render("Owner:"))
 	}
+	b.WriteString("\n")
+	b.WriteString(m.ownerInput.View())
 	b.WriteString("\n")
 
 	// Footer

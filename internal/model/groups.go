@@ -212,7 +212,8 @@ func NewGroupEditModel(group *data.TaskGroup, groupStore *data.GroupStore, isNew
 	nameInput := textinput.New()
 	nameInput.Placeholder = "Group name"
 	nameInput.CharLimit = 50
-	nameInput.Width = 30
+	nameInput.Width = 40
+	nameInput.Prompt = "> "
 	nameInput.Focus()
 
 	m := GroupEditModel{
@@ -330,17 +331,13 @@ func (m GroupEditModel) View() string {
 	b.WriteString("\n\n")
 
 	// Name field
-	nameLabel := ui.InputLabelStyle.Render("Name:")
 	if m.focusIdx == 0 {
-		nameLabel = ui.SelectedStyle.Render("Name:")
-	}
-	b.WriteString(nameLabel)
-	b.WriteString("\n")
-	if m.focusIdx == 0 {
-		b.WriteString(ui.FocusedInputStyle.Render(m.nameInput.View()))
+		b.WriteString(ui.SelectedStyle.Render("Name:"))
 	} else {
-		b.WriteString(ui.InputStyle.Render(m.nameInput.View()))
+		b.WriteString(ui.InputLabelStyle.Render("Name:"))
 	}
+	b.WriteString("\n")
+	b.WriteString(m.nameInput.View())
 	b.WriteString("\n\n")
 
 	// Color field

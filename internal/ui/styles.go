@@ -4,24 +4,25 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Colors
+// Tokyo Night Colors
 var (
-	Primary     = lipgloss.Color("#8b5cf6") // purple
-	Secondary   = lipgloss.Color("#6366f1") // indigo
-	Success     = lipgloss.Color("#10b981") // green
-	Warning     = lipgloss.Color("#f59e0b") // amber
-	Danger      = lipgloss.Color("#ef4444") // red
-	Muted       = lipgloss.Color("#6b7280") // gray
-	Background  = lipgloss.Color("#1f2937") // dark gray
-	Foreground  = lipgloss.Color("#f9fafb") // white
-	BorderColor = lipgloss.Color("#4b5563") // gray
+	Primary     = lipgloss.Color("#bb9af7") // purple
+	Secondary   = lipgloss.Color("#7aa2f7") // blue
+	Success     = lipgloss.Color("#9ece6a") // green
+	Warning     = lipgloss.Color("#e0af68") // yellow
+	Danger      = lipgloss.Color("#f7768e") // red
+	Muted       = lipgloss.Color("#565f89") // comment gray
+	Background  = lipgloss.Color("#1a1b26") // background
+	Foreground  = lipgloss.Color("#c0caf5") // foreground
+	BorderColor = lipgloss.Color("#33467c") // selection
+	Cyan        = lipgloss.Color("#7dcfff") // cyan
 )
 
-// Status colors
+// Status colors - Tokyo Night
 var (
-	PendingColor    = lipgloss.Color("#6b7280") // gray
-	InProgressColor = lipgloss.Color("#3b82f6") // blue
-	CompletedColor  = lipgloss.Color("#10b981") // green
+	PendingColor    = lipgloss.Color("#565f89") // muted
+	InProgressColor = lipgloss.Color("#7aa2f7") // blue
+	CompletedColor  = lipgloss.Color("#9ece6a") // green
 )
 
 // Base styles
@@ -171,17 +172,13 @@ var (
 				Padding(0, 2)
 )
 
-// Input styles
+// Input styles - no borders to avoid conflicts with bubbles components
 var (
 	InputStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(Muted).
-			Padding(0, 1)
+			Foreground(Muted)
 
 	FocusedInputStyle = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				BorderForeground(Primary).
-				Padding(0, 1)
+				Foreground(Foreground)
 
 	InputLabelStyle = lipgloss.NewStyle().
 			Foreground(Muted).
