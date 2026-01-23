@@ -24,6 +24,31 @@ func Footer(keys [][]string, width int) string {
 	return HorizontalLine(width) + "\n" + strings.Join(parts, "  ")
 }
 
+// KeyHint represents a key binding with enabled state
+type KeyHint struct {
+	Key     string
+	Desc    string
+	Enabled bool
+}
+
+// FooterWithHints renders help footer with disabled keys grayed out
+func FooterWithHints(hints []KeyHint, width int) string {
+	var parts []string
+	for _, hint := range hints {
+		if hint.Enabled {
+			key := KeyStyle.Render(fmt.Sprintf("[%s]", hint.Key))
+			desc := MutedStyle.Render(hint.Desc)
+			parts = append(parts, fmt.Sprintf("%s %s", key, desc))
+		} else {
+			// Disabled - fully grayed out
+			key := DisabledStyle.Render(fmt.Sprintf("[%s]", hint.Key))
+			desc := DisabledStyle.Render(hint.Desc)
+			parts = append(parts, fmt.Sprintf("%s %s", key, desc))
+		}
+	}
+	return HorizontalLine(width) + "\n" + strings.Join(parts, "  ")
+}
+
 // StatusBadge renders a status badge with icon
 func StatusBadge(status string) string {
 	icon := StatusIcon(status)

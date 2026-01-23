@@ -9,7 +9,12 @@ import (
 	"github.com/jss826/cctasks/internal/model"
 )
 
+// Version is set at build time via -ldflags
+var Version = "dev"
+
 func main() {
+	model.AppVersion = Version
+
 	app := model.NewApp()
 
 	p := tea.NewProgram(app, tea.WithAltScreen())

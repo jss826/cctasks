@@ -196,16 +196,24 @@ func (m DetailModel) View() string {
 	}
 	b.WriteString("\n")
 
-	// Footer
+	// Footer - context-aware
 	b.WriteString("\n")
-	keys := [][]string{
-		{"Esc", "Back"},
-		{"e", "Edit"},
-		{"s", "Status"},
-		{"d", "Delete"},
-		{"q", "Quit"},
+	if m.confirmDelete {
+		hints := []ui.KeyHint{
+			{Key: "y", Desc: "Confirm", Enabled: true},
+			{Key: "n", Desc: "Cancel", Enabled: true},
+		}
+		b.WriteString(ui.FooterWithHints(hints, m.width))
+	} else {
+		hints := []ui.KeyHint{
+			{Key: "Esc", Desc: "Back", Enabled: true},
+			{Key: "e", Desc: "Edit", Enabled: true},
+			{Key: "s", Desc: "Cycle Status", Enabled: true},
+			{Key: "d", Desc: "Delete", Enabled: true},
+			{Key: "q", Desc: "Quit", Enabled: true},
+		}
+		b.WriteString(ui.FooterWithHints(hints, m.width))
 	}
-	b.WriteString(ui.Footer(keys, m.width))
 
 	return ui.AppStyle.Render(b.String())
 }

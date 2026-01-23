@@ -383,21 +383,28 @@ func (m TasksModel) View() string {
 		b.WriteString("\n")
 	}
 
-	// Footer
+	// Footer - context-aware hints
 	b.WriteString("\n")
-	keys := [][]string{
-		{"↑↓", "Navigate"},
-		{"Enter", "Select"},
-		{"n", "New"},
-		{"e", "Edit"},
-		{"s", "Status"},
-		{"f", "Filter"},
-		{"G", "Groups"},
-		{"/", "Search"},
-		{"p", "Projects"},
-		{"q", "Quit"},
+
+	// Check if a task is selected (not a group)
+	taskSelected := false
+	if len(m.items) > 0 && m.cursor < len(m.items) {
+		taskSelected = m.items[m.cursor].task != nil
 	}
-	b.WriteString(ui.Footer(keys, m.width))
+
+	hints := []ui.KeyHint{
+		{Key: "↑↓", Desc: "Navigate", Enabled: len(m.items) > 0},
+		{Key: "Enter", Desc: "Select", Enabled: len(m.items) > 0},
+		{Key: "n", Desc: "New", Enabled: true},
+		{Key: "e", Desc: "Edit", Enabled: taskSelected},
+		{Key: "s", Desc: "Status", Enabled: taskSelected},
+		{Key: "f", Desc: "Filter", Enabled: true},
+		{Key: "G", Desc: "Groups", Enabled: true},
+		{Key: "/", Desc: "Search", Enabled: true},
+		{Key: "p", Desc: "Projects", Enabled: true},
+		{Key: "q", Desc: "Quit", Enabled: true},
+	}
+	b.WriteString(ui.FooterWithHints(hints, m.width))
 
 	return ui.AppStyle.Render(b.String())
 }

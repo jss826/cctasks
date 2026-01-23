@@ -62,6 +62,10 @@ var (
 	MutedStyle = lipgloss.NewStyle().
 			Foreground(Muted)
 
+	// Disabled text (darker than muted)
+	DisabledStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#3b3f51"))
+
 	// Help text
 	HelpStyle = lipgloss.NewStyle().
 			Foreground(Muted).

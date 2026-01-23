@@ -6,6 +6,9 @@ import (
 	"github.com/jss826/cctasks/internal/data"
 )
 
+// AppVersion is set from main.go
+var AppVersion = "dev"
+
 // Screen represents the current screen
 type Screen int
 
