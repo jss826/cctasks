@@ -124,7 +124,7 @@ func (m GroupsModel) Update(msg tea.Msg) (GroupsModel, tea.Cmd) {
 func (m GroupsModel) View() string {
 	var b strings.Builder
 
-	// Header
+	// Header (subtract 4 for AppStyle padding)
 	b.WriteString(ui.Header("Groups", m.width))
 	b.WriteString("\n\n")
 
@@ -192,7 +192,7 @@ func (m GroupsModel) View() string {
 	}
 	b.WriteString(ui.Footer(keys, m.width))
 
-	return ui.AppStyle.Render(b.String())
+	return b.String()
 }
 
 // GroupEditModel handles the group edit dialog
@@ -377,5 +377,5 @@ func (m GroupEditModel) View() string {
 	}
 	b.WriteString(ui.Footer(keys, m.width))
 
-	return ui.AppStyle.Render(b.String())
+	return b.String()
 }

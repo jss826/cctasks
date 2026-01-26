@@ -27,9 +27,10 @@ var (
 
 // Base styles
 var (
-	// App container
+	// App container (vertical padding only, horizontal handled by content)
 	AppStyle = lipgloss.NewStyle().
-			Padding(1, 2)
+			PaddingTop(1).
+			PaddingBottom(1)
 
 	// Title bar (softer, no heavy background)
 	TitleStyle = lipgloss.NewStyle().
@@ -132,11 +133,9 @@ var GroupHeaderStyle = lipgloss.NewStyle().
 
 // Task item styles
 var (
-	TaskItemStyle = lipgloss.NewStyle().
-			PaddingLeft(2)
+	TaskItemStyle = lipgloss.NewStyle()
 
 	TaskSelectedStyle = lipgloss.NewStyle().
-				PaddingLeft(2).
 				Bold(true).
 				Foreground(Primary)
 
@@ -198,9 +197,7 @@ func ColorSwatchStyle(color string) lipgloss.Style {
 
 // Horizontal line
 func HorizontalLine(width int) string {
-	return lipgloss.NewStyle().
-		Foreground(BorderColor).
-		Render(repeatString("─", width))
+	return lipgloss.NewStyle().Foreground(BorderColor).Render(repeatString("─", width))
 }
 
 // repeatString repeats a string n times

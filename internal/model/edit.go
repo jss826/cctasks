@@ -321,5 +321,5 @@ func (m EditModel) View() string {
 	}
 	b.WriteString(ui.Footer(keys, m.width))
 
-	return ui.AppStyle.Render(b.String())
+	return b.String()
 }

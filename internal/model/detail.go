@@ -99,7 +99,7 @@ func (m *DetailModel) cycleStatus() {
 func (m DetailModel) View() string {
 	var b strings.Builder
 
-	// Header
+	// Header (subtract 4 for AppStyle padding)
 	title := fmt.Sprintf("Task #%s", m.task.ID)
 	b.WriteString(ui.Header(title, m.width))
 	b.WriteString("\n\n")
@@ -140,7 +140,7 @@ func (m DetailModel) View() string {
 
 	// Description section
 	b.WriteString("\n")
-	b.WriteString(ui.HorizontalLine(m.width - 4))
+	b.WriteString(ui.HorizontalLine(m.width))
 	b.WriteString("\n")
 	b.WriteString(ui.MutedStyle.Render("Description:"))
 	b.WriteString("\n")
@@ -155,7 +155,7 @@ func (m DetailModel) View() string {
 
 	// Dependencies section
 	b.WriteString("\n")
-	b.WriteString(ui.HorizontalLine(m.width - 4))
+	b.WriteString(ui.HorizontalLine(m.width))
 	b.WriteString("\n")
 	b.WriteString(ui.MutedStyle.Render("Dependencies:"))
 	b.WriteString("\n")
@@ -216,5 +216,5 @@ func (m DetailModel) View() string {
 		b.WriteString(ui.FooterWithHints(hints, m.width))
 	}
 
-	return ui.AppStyle.Render(b.String())
+	return b.String()
 }

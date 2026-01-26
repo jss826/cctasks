@@ -333,7 +333,7 @@ func (m TasksModel) View() string {
 	b.WriteString(ui.FilterBarStyle.Render(filterBar))
 	b.WriteString("\n")
 
-	b.WriteString(ui.HorizontalLine(m.width - 4))
+	b.WriteString(ui.HorizontalLine(m.width))
 	b.WriteString("\n")
 
 	// Status change mode indicator
@@ -407,7 +407,7 @@ func (m TasksModel) View() string {
 	}
 	b.WriteString(ui.FooterWithHints(hints, m.width))
 
-	return ui.AppStyle.Render(b.String())
+	return b.String()
 }
 
 func (m *TasksModel) renderGroupHeader(groupName string, selected bool) string {
@@ -483,9 +483,9 @@ func (m *TasksModel) renderTaskItem(task *data.Task, selected bool) string {
 
 	// Calculate padding using lipgloss.Width for accurate measurement
 	leftWidth := lipgloss.Width(leftContent)
-	totalWidth := m.width - 8
+	totalWidth := m.width
 	if totalWidth < 60 {
-		totalWidth = 80
+		totalWidth = 60
 	}
 	padding := totalWidth - leftWidth - statusWidth
 	if padding < 1 {

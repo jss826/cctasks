@@ -5,6 +5,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-runewidth"
 
 	"github.com/jss826/cctasks/internal/model"
 )
@@ -13,6 +14,9 @@ import (
 var Version = "dev"
 
 func main() {
+	// Disable East Asian Width to fix box drawing character width
+	runewidth.DefaultCondition.EastAsianWidth = false
+
 	model.AppVersion = Version
 
 	app := model.NewApp()

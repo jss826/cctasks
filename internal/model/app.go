@@ -2,7 +2,6 @@ package model
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 
 	"github.com/jss826/cctasks/internal/data"
 )
@@ -282,10 +281,8 @@ func (a App) View() string {
 		}
 	}
 
-	// Place content in fixed-size frame to prevent screen artifacts
-	if a.width > 0 && a.height > 0 {
-		return lipgloss.Place(a.width, a.height, lipgloss.Left, lipgloss.Top, content)
-	}
+	// Return content directly without lipgloss.Place
+	// (lipgloss miscalculates width of "─" character)
 	return content
 }
 

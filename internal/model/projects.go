@@ -81,7 +81,7 @@ func (m ProjectsModel) Update(msg tea.Msg) (ProjectsModel, tea.Cmd) {
 func (m ProjectsModel) View() string {
 	var b strings.Builder
 
-	// Header with version
+	// Header with version (subtract 4 for AppStyle padding)
 	title := fmt.Sprintf("cctasks v%s", AppVersion)
 	b.WriteString(ui.Header(title, m.width))
 	b.WriteString("\n\n")
@@ -89,7 +89,7 @@ func (m ProjectsModel) View() string {
 	// Title
 	b.WriteString(ui.TitleStyle.Render("Projects"))
 	b.WriteString("\n")
-	b.WriteString(ui.HorizontalLine(40))
+	b.WriteString(ui.HorizontalLine(m.width))
 	b.WriteString("\n\n")
 
 	// Error display
@@ -127,7 +127,7 @@ func (m ProjectsModel) View() string {
 
 		if len(m.projects) > 0 {
 			b.WriteString("\n")
-			b.WriteString(ui.HorizontalLine(40))
+			b.WriteString(ui.HorizontalLine(m.width))
 			b.WriteString("\n\n")
 		}
 	}
@@ -159,5 +159,5 @@ func (m ProjectsModel) View() string {
 	}
 	b.WriteString(ui.Footer(keys, m.width))
 
-	return ui.AppStyle.Render(b.String())
+	return b.String()
 }
