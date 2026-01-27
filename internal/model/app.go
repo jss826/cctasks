@@ -139,7 +139,8 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Auto-reload on any key press if data has changed
-		if a.projectName != "" && a.taskStore != nil {
+		// Skip reload on edit screens (Groups, GroupEdit, Edit) to avoid cursor/state reset
+		if a.projectName != "" && a.taskStore != nil && a.screen != ScreenGroups && a.screen != ScreenGroupEdit && a.screen != ScreenEdit {
 			needsReload := a.taskStore.NeedsReload()
 			if a.groupStore != nil && a.groupStore.NeedsReload() {
 				needsReload = true
@@ -153,10 +154,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					a.tasks = NewTasksModel(a.projectName, a.taskStore, a.groupStore)
 					a.tasks.width = a.width
 					a.tasks.height = a.height
-				case ScreenGroups:
-					a.groups = NewGroupsModel(a.groupStore)
-					a.groups.width = a.width
-					a.groups.height = a.height
 				}
 			}
 		}

@@ -86,26 +86,20 @@ func (m GroupsModel) Update(msg tea.Msg) (GroupsModel, tea.Cmd) {
 			if len(m.groupStore.Groups) > 0 {
 				m.confirmDelete = true
 			}
-		case "K", "shift+up":
-			// Move group up
-			if len(m.groupStore.Groups) > 0 {
-				name := m.groupStore.Groups[m.cursor].Name
-				if m.groupStore.MoveGroupUp(name) {
+		case "K":
+			// Move group up (cursor follows the item)
+			if len(m.groupStore.Groups) > 1 && m.cursor > 0 {
+				if m.groupStore.MoveGroupUp(m.groupStore.Groups[m.cursor].Name) {
 					m.groupStore.Save()
-					if m.cursor > 0 {
-						m.cursor--
-					}
+					m.cursor--
 				}
 			}
-		case "J", "shift+down":
-			// Move group down
-			if len(m.groupStore.Groups) > 0 {
-				name := m.groupStore.Groups[m.cursor].Name
-				if m.groupStore.MoveGroupDown(name) {
+		case "J":
+			// Move group down (cursor follows the item)
+			if len(m.groupStore.Groups) > 1 && m.cursor < len(m.groupStore.Groups)-1 {
+				if m.groupStore.MoveGroupDown(m.groupStore.Groups[m.cursor].Name) {
 					m.groupStore.Save()
-					if m.cursor < len(m.groupStore.Groups)-1 {
-						m.cursor++
-					}
+					m.cursor++
 				}
 			}
 		case "esc", "left":
