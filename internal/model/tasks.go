@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -30,6 +31,9 @@ type TasksModel struct {
 	hideCompleted bool   // hide completed tasks
 	searchInput   textinput.Model
 	searchActive  bool
+
+	// Sorting: "id" (default), "status"
+	sortMode string
 
 	// Group collapsed state
 	collapsedGroups map[string]bool
@@ -135,6 +139,15 @@ func (m *TasksModel) rebuildItems() {
 
 		tasks = append(tasks, task)
 	}
+
+	// Sort tasks
+	if m.sortMode == "status" {
+		statusOrder := map[string]int{"pending": 0, "in_progress": 1, "completed": 2}
+		sort.SliceStable(tasks, func(i, j int) bool {
+			return statusOrder[tasks[i].Status] < statusOrder[tasks[j].Status]
+		})
+	}
+	// Default: sorted by ID (already in file order, which is ID order)
 
 	// Group tasks by group name
 	groupedTasks := make(map[string][]data.Task)
@@ -304,6 +317,9 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 		case "h":
 			m.hideCompleted = !m.hideCompleted
 			m.rebuildItems()
+		case "o":
+			m.cycleSortMode()
+			m.rebuildItems()
 		case "G":
 			return m, func() tea.Msg {
 				return ManageGroupsMsg{}
@@ -352,6 +368,17 @@ func (m *TasksModel) cycleGroupFilter() {
 	m.groupFilter = ""
 }
 
+func (m *TasksModel) cycleSortMode() {
+	modes := []string{"", "status"}
+	for i, mode := range modes {
+		if mode == m.sortMode {
+			m.sortMode = modes[(i+1)%len(modes)]
+			return
+		}
+	}
+	m.sortMode = ""
+}
+
 func (m *TasksModel) setCurrentTaskStatus(status string) {
 	if len(m.items) == 0 {
 		return
@@ -386,18 +413,31 @@ func (m TasksModel) View() string {
 		groupLabel = m.groupFilter
 	}
 
-	// Pad status to fixed width (max: "in_progress" = 11 chars)
-	filterLine := fmt.Sprintf("Status (f): [%-11s]    Group (g): [%s]", statusLabel, groupLabel)
+	// Pad status to fixed width (max: "in_progress" = 11 chars), centered
+	filterLine := fmt.Sprintf("Status %s: [%s]    Group %s: [%s]",
+		ui.KeyStyle.Render("(f)"), ui.CenterPad(statusLabel, 11),
+		ui.KeyStyle.Render("(g)"), groupLabel)
 	b.WriteString(ui.FilterBarStyle.Render(filterLine))
 	b.WriteString("\n")
 
-	// Filter bar - line 2: Search and Hide completed toggle
+	// Filter bar - line 2: Search
+	searchLine := fmt.Sprintf("Search %s: %s", ui.KeyStyle.Render("(/)"), m.searchInput.View())
+	b.WriteString(ui.FilterBarStyle.Render(searchLine))
+	b.WriteString("\n")
+
+	// Filter bar - line 3: Completed and Sort
 	hideLabel := "Show"
 	if m.hideCompleted {
 		hideLabel = "Hide"
 	}
-	searchLine := fmt.Sprintf("Search (/): %s    Completed (h): [%s]", m.searchInput.View(), hideLabel)
-	b.WriteString(ui.FilterBarStyle.Render(searchLine))
+	sortLabel := "ID"
+	if m.sortMode == "status" {
+		sortLabel = "Status"
+	}
+	optionsLine := fmt.Sprintf("Completed %s: [%s]    Sort %s: [%s]",
+		ui.KeyStyle.Render("(h)"), hideLabel,
+		ui.KeyStyle.Render("(o)"), ui.CenterPad(sortLabel, 6))
+	b.WriteString(ui.FilterBarStyle.Render(optionsLine))
 	b.WriteString("\n")
 
 	b.WriteString(ui.HorizontalLine(m.width))

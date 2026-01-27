@@ -255,6 +255,17 @@ func CenterText(text string, width int) string {
 	return strings.Repeat(" ", padding) + text
 }
 
+// CenterPad centers text within a given width with padding on both sides
+func CenterPad(text string, width int) string {
+	textLen := len(text)
+	if textLen >= width {
+		return text
+	}
+	leftPad := (width - textLen) / 2
+	rightPad := width - textLen - leftPad
+	return strings.Repeat(" ", leftPad) + text + strings.Repeat(" ", rightPad)
+}
+
 // Box renders content in a box
 func Box(title, content string, width int) string {
 	style := BoxStyle.Width(width)
