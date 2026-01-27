@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-runewidth"
@@ -16,6 +17,13 @@ var Version = "dev"
 func main() {
 	// Disable East Asian Width to fix box drawing character width
 	runewidth.DefaultCondition.EastAsianWidth = false
+
+	// Use build info version if not set via ldflags (e.g., go install)
+	if Version == "dev" {
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "(devel)" {
+			Version = info.Main.Version
+		}
+	}
 
 	model.AppVersion = Version
 
