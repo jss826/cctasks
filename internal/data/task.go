@@ -34,6 +34,27 @@ type TaskStore struct {
 	lastModTime time.Time // last modification time of project directory
 }
 
+// NewTaskStoreForTest creates a TaskStore for testing with a custom directory
+func NewTaskStoreForTest(dir string, tasks []Task) (*TaskStore, error) {
+	store := &TaskStore{
+		ProjectName: "test",
+		Tasks:       tasks,
+		projectDir:  dir,
+	}
+	// Save each task to file
+	for _, task := range tasks {
+		data, err := json.MarshalIndent(task, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		filePath := filepath.Join(dir, task.ID+".json")
+		if err := os.WriteFile(filePath, data, 0644); err != nil {
+			return nil, err
+		}
+	}
+	return store, nil
+}
+
 // Project represents a project with task count
 type Project struct {
 	Name      string
