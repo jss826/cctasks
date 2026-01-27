@@ -254,7 +254,7 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 			m.searchActive = true
 			m.searchInput.Focus()
 			return m, textinput.Blink
-		case "p":
+		case "p", "esc", "left":
 			return m, func() tea.Msg {
 				return BackToProjectsMsg{}
 			}
@@ -402,7 +402,7 @@ func (m TasksModel) View() string {
 		{Key: "G", Desc: "Groups", Enabled: true},
 		{Key: "/", Desc: "Search", Enabled: true},
 		{Key: "Ctrl+L", Desc: "Redraw", Enabled: true},
-		{Key: "p", Desc: "Projects", Enabled: true},
+		{Key: "Esc", Desc: "Back", Enabled: true},
 		{Key: "q", Desc: "Quit", Enabled: true},
 	}
 	b.WriteString(ui.FooterWithHints(hints, m.width))
