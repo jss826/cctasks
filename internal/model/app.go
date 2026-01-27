@@ -193,14 +193,12 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case BackToTasksMsg:
-		// Reload tasks to reflect any changes
+		// Reload tasks to reflect any changes, preserving UI state
 		a.taskStore, _ = data.LoadTasks(a.projectName)
 		a.groupStore, _ = data.LoadGroups(a.projectName)
-		a.tasks = NewTasksModel(a.projectName, a.taskStore, a.groupStore)
-		a.tasks.width = a.width
-		a.tasks.height = a.height
+		a.tasks.ReloadData(a.taskStore, a.groupStore)
 		a.screen = ScreenTasks
-		return a, a.tasks.Init()
+		return a, nil
 
 	case EditTaskMsg:
 		a.edit = NewEditModel(msg.Task, a.taskStore, a.groupStore, false)

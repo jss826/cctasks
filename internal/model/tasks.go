@@ -67,6 +67,39 @@ func (m TasksModel) Init() tea.Cmd {
 	return nil
 }
 
+// ReloadData reloads task/group data while preserving UI state (cursor, filters, collapsed groups)
+func (m *TasksModel) ReloadData(taskStore *data.TaskStore, groupStore *data.GroupStore) {
+	m.taskStore = taskStore
+	m.groupStore = groupStore
+
+	// Remember current task ID if on a task
+	var currentTaskID string
+	if m.cursor < len(m.items) && !m.items[m.cursor].isGroup && m.items[m.cursor].task != nil {
+		currentTaskID = m.items[m.cursor].task.ID
+	}
+
+	// Rebuild items with new data
+	m.rebuildItems()
+
+	// Try to restore cursor to same task
+	if currentTaskID != "" {
+		for i, item := range m.items {
+			if !item.isGroup && item.task != nil && item.task.ID == currentTaskID {
+				m.cursor = i
+				return
+			}
+		}
+	}
+
+	// If task not found, ensure cursor is valid
+	if m.cursor >= len(m.items) {
+		m.cursor = len(m.items) - 1
+	}
+	if m.cursor < 0 {
+		m.cursor = 0
+	}
+}
+
 // rebuildItems rebuilds the flattened list based on current filters
 func (m *TasksModel) rebuildItems() {
 	m.items = nil
