@@ -42,6 +42,25 @@ var DefaultColors = []string{
 	"#84cc16", // lime
 }
 
+// NewGroupStoreForTest creates a GroupStore for testing with a custom directory
+func NewGroupStoreForTest(dir string, groups []TaskGroup) (*GroupStore, error) {
+	filePath := filepath.Join(dir, "_groups.json")
+	store := &GroupStore{
+		Groups:   groups,
+		filePath: filePath,
+	}
+	// Assign orders if not set
+	for i := range store.Groups {
+		if store.Groups[i].Order == 0 && i > 0 {
+			store.Groups[i].Order = i
+		}
+	}
+	if err := store.Save(); err != nil {
+		return nil, err
+	}
+	return store, nil
+}
+
 // LoadGroups loads groups from a project's _groups.json
 func LoadGroups(projectName string) (*GroupStore, error) {
 	groupsFilePath, err := config.GetGroupsFilePath(projectName)
