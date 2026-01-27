@@ -148,12 +148,10 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if needsReload {
 				a.taskStore, _ = data.LoadTasks(a.projectName)
 				a.groupStore, _ = data.LoadGroups(a.projectName)
-				// Update current screen's data
+				// Update current screen's data, preserving UI state
 				switch a.screen {
 				case ScreenTasks:
-					a.tasks = NewTasksModel(a.projectName, a.taskStore, a.groupStore)
-					a.tasks.width = a.width
-					a.tasks.height = a.height
+					a.tasks.ReloadData(a.taskStore, a.groupStore)
 				}
 			}
 		}
@@ -215,11 +213,9 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case TaskSavedMsg:
 		a.taskStore = msg.Store
-		a.tasks = NewTasksModel(a.projectName, a.taskStore, a.groupStore)
-		a.tasks.width = a.width
-		a.tasks.height = a.height
+		a.tasks.ReloadData(a.taskStore, a.groupStore)
 		a.screen = ScreenTasks
-		return a, a.tasks.Init()
+		return a, nil
 
 	case CancelEditMsg:
 		if a.prevScreen == ScreenDetail {
@@ -238,13 +234,11 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.groups.Init()
 
 	case BackFromGroupsMsg:
-		// Reload groups
+		// Reload groups, preserving UI state
 		a.groupStore, _ = data.LoadGroups(a.projectName)
-		a.tasks = NewTasksModel(a.projectName, a.taskStore, a.groupStore)
-		a.tasks.width = a.width
-		a.tasks.height = a.height
+		a.tasks.ReloadData(a.taskStore, a.groupStore)
 		a.screen = ScreenTasks
-		return a, a.tasks.Init()
+		return a, nil
 
 	case EditGroupMsg:
 		a.groupEdit = NewGroupEditModel(msg.Group, a.groupStore, msg.IsNew)
@@ -266,15 +260,12 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case RefreshMsg:
-		// Reload data
+		// Reload data, preserving UI state
 		if a.projectName != "" {
 			a.taskStore, _ = data.LoadTasks(a.projectName)
 			a.groupStore, _ = data.LoadGroups(a.projectName)
 			if a.screen == ScreenTasks {
-				a.tasks = NewTasksModel(a.projectName, a.taskStore, a.groupStore)
-				a.tasks.width = a.width
-				a.tasks.height = a.height
-				return a, a.tasks.Init()
+				a.tasks.ReloadData(a.taskStore, a.groupStore)
 			}
 		}
 		return a, nil
