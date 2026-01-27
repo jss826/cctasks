@@ -419,6 +419,12 @@ func (m TasksModel) View() string {
 		endIdx = len(m.items)
 	}
 
+	// Scroll indicator - top
+	if startIdx > 0 {
+		b.WriteString(ui.MutedStyle.Render(fmt.Sprintf("  ↑ %d more above", startIdx)))
+		b.WriteString("\n")
+	}
+
 	for i := startIdx; i < endIdx; i++ {
 		item := m.items[i]
 		isSelected := i == m.cursor
@@ -428,6 +434,13 @@ func (m TasksModel) View() string {
 		} else if item.task != nil {
 			b.WriteString(m.renderTaskItem(item.task, isSelected))
 		}
+		b.WriteString("\n")
+	}
+
+	// Scroll indicator - bottom
+	remaining := len(m.items) - endIdx
+	if remaining > 0 {
+		b.WriteString(ui.MutedStyle.Render(fmt.Sprintf("  ↓ %d more below", remaining)))
 		b.WriteString("\n")
 	}
 
@@ -460,17 +473,25 @@ func (m TasksModel) View() string {
 }
 
 func (m *TasksModel) renderGroupHeader(groupName string, selected bool) string {
-	// Get task count for this group
-	count := 0
+	// Count tasks by status for this group
+	pending, inProgress, completed := 0, 0, 0
 	for _, task := range m.taskStore.Tasks {
 		tg := data.GetTaskGroup(task)
 		if tg == "" {
 			tg = "Uncategorized"
 		}
 		if tg == groupName {
-			count++
+			switch task.Status {
+			case "pending":
+				pending++
+			case "in_progress":
+				inProgress++
+			case "completed":
+				completed++
+			}
 		}
 	}
+	total := pending + inProgress + completed
 
 	// Get group color
 	color := m.groupStore.GetGroupColor(groupName)
@@ -492,8 +513,27 @@ func (m *TasksModel) renderGroupHeader(groupName string, selected bool) string {
 	}
 
 	swatch := ui.ColorSwatchStyle(color).Render("●")
-	header := fmt.Sprintf("%s%s %s %s (%d)", prefix, collapseIcon, swatch, groupName, count)
+
+	// Build status summary: ○2 ●1 ✓3
+	var statusParts []string
+	if pending > 0 {
+		statusParts = append(statusParts, ui.PendingStyle.Render(fmt.Sprintf("○%d", pending)))
+	}
+	if inProgress > 0 {
+		statusParts = append(statusParts, ui.InProgressStyle.Render(fmt.Sprintf("●%d", inProgress)))
+	}
+	if completed > 0 {
+		statusParts = append(statusParts, ui.CompletedStyle.Render(fmt.Sprintf("✓%d", completed)))
+	}
+	statusSummary := strings.Join(statusParts, " ")
+
+	header := fmt.Sprintf("%s%s %s %s (%d)", prefix, collapseIcon, swatch, groupName, total)
 	result := style.Render(header)
+
+	// Add status summary
+	if statusSummary != "" {
+		result += "  " + statusSummary
+	}
 
 	// Show hint when selected
 	if selected {
