@@ -441,14 +441,17 @@ func (m TasksModel) View() string {
 	}
 
 	hints := []ui.KeyHint{
+		// Navigation
 		{Key: "↑↓", Desc: "Navigate", Enabled: len(m.items) > 0},
 		{Key: "Enter", Desc: "Select", Enabled: len(m.items) > 0},
+		{Key: "Esc", Desc: "Back", Enabled: true},
+		// Task operations
 		{Key: "n", Desc: "New", Enabled: true},
 		{Key: "e", Desc: "Edit", Enabled: taskSelected},
 		{Key: "s", Desc: "Status", Enabled: taskSelected},
+		// Management
 		{Key: "G", Desc: "Groups", Enabled: true},
-		{Key: "Ctrl+L", Desc: "Redraw", Enabled: true},
-		{Key: "Esc", Desc: "Back", Enabled: true},
+		// Exit
 		{Key: "q", Desc: "Quit", Enabled: true},
 	}
 	b.WriteString(ui.FooterWithHints(hints, m.width))

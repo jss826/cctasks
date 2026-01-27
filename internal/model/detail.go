@@ -206,11 +206,13 @@ func (m DetailModel) View() string {
 		b.WriteString(ui.FooterWithHints(hints, m.width))
 	} else {
 		hints := []ui.KeyHint{
+			// Navigation
 			{Key: "Esc", Desc: "Back", Enabled: true},
+			// Task operations
 			{Key: "e", Desc: "Edit", Enabled: true},
-			{Key: "s", Desc: "Cycle Status", Enabled: true},
+			{Key: "s", Desc: "Status", Enabled: true},
 			{Key: "d", Desc: "Delete", Enabled: true},
-			{Key: "Ctrl+L", Desc: "Redraw", Enabled: true},
+			// Exit
 			{Key: "q", Desc: "Quit", Enabled: true},
 		}
 		b.WriteString(ui.FooterWithHints(hints, m.width))

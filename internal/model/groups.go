@@ -182,13 +182,16 @@ func (m GroupsModel) View() string {
 	// Footer
 	b.WriteString("\n")
 	keys := [][]string{
-		{"↑↓", "Select"},
+		// Navigation
+		{"↑↓", "Navigate"},
 		{"Enter", "Edit"},
+		{"Esc", "Back"},
+		// Group operations
 		{"n", "New"},
 		{"d", "Delete"},
 		{"K/J", "Reorder"},
-		{"Ctrl+L", "Redraw"},
-		{"Esc", "Back"},
+		// Exit
+		{"q", "Quit"},
 	}
 	b.WriteString(ui.Footer(keys, m.width))
 

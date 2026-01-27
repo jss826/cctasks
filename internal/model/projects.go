@@ -151,10 +151,13 @@ func (m ProjectsModel) View() string {
 	// Footer
 	b.WriteString("\n")
 	keys := [][]string{
+		// Navigation
+		{"↑↓", "Navigate"},
 		{"Enter", "Select"},
-		{"r", "Refresh"},
-		{"Ctrl+L", "Redraw"},
 		{"?", "Help"},
+		// Operations
+		{"r", "Refresh"},
+		// Exit
 		{"q", "Quit"},
 	}
 	b.WriteString(ui.Footer(keys, m.width))
