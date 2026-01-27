@@ -20,9 +20,15 @@ func main() {
 
 	// Use build info version if not set via ldflags (e.g., go install)
 	if Version == "dev" {
-		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "(devel)" {
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "(devel)" && info.Main.Version != "" {
 			Version = info.Main.Version
 		}
+	}
+
+	// Handle --version flag
+	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
+		fmt.Printf("cctasks %s\n", Version)
+		return
 	}
 
 	model.AppVersion = Version
