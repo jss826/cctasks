@@ -22,20 +22,30 @@ type EditModel struct {
 	height     int
 
 	// Form fields
-	subjectInput textinput.Model
-	descInput    textarea.Model
-	ownerInput   textinput.Model
+	subjectInput   textinput.Model
+	descInput      textarea.Model
+	ownerInput     textinput.Model
+	blocksInput    textinput.Model
+	blockedByInput textinput.Model
 
 	// Selectors
 	statusIdx int
 	groupIdx  int
 
 	// Focus management
-	focusIdx int // 0=subject, 1=desc, 2=status, 3=group, 4=owner
+	focusIdx int // 0=subject, 1=desc, 2=status, 3=group, 4=owner, 5=blocks, 6=blockedBy
 
 	// Available options
 	statuses []string
 	groups   []string
+
+	// Task picker mode (for blocks/blockedBy)
+	pickerActive   bool
+	pickerForField int // 5=blocks, 6=blockedBy
+	pickerSearch   textinput.Model
+	pickerTasks    []data.Task // filtered tasks
+	pickerCursor   int
+	pickerSelected map[string]bool // selected task IDs
 }
 
 // NewEditModel creates a new EditModel
@@ -64,6 +74,27 @@ func NewEditModel(task *data.Task, taskStore *data.TaskStore, groupStore *data.G
 	ownerInput.Width = 40
 	ownerInput.Prompt = "> "
 
+	// Blocks input
+	blocksInput := textinput.New()
+	blocksInput.Placeholder = "Task IDs (comma-separated, e.g. 1,2,3)"
+	blocksInput.CharLimit = 100
+	blocksInput.Width = 40
+	blocksInput.Prompt = "> "
+
+	// BlockedBy input
+	blockedByInput := textinput.New()
+	blockedByInput.Placeholder = "Task IDs (comma-separated, e.g. 1,2,3)"
+	blockedByInput.CharLimit = 100
+	blockedByInput.Width = 40
+	blockedByInput.Prompt = "> "
+
+	// Picker search input
+	pickerSearch := textinput.New()
+	pickerSearch.Placeholder = "Type to search tasks..."
+	pickerSearch.CharLimit = 50
+	pickerSearch.Width = 40
+	pickerSearch.Prompt = "/ "
+
 	// Statuses
 	statuses := []string{"pending", "in_progress", "completed"}
 
@@ -71,14 +102,18 @@ func NewEditModel(task *data.Task, taskStore *data.TaskStore, groupStore *data.G
 	groups := append([]string{""}, groupStore.GetGroupNames()...)
 
 	m := EditModel{
-		taskStore:    taskStore,
-		groupStore:   groupStore,
-		isNew:        isNew,
-		subjectInput: subjectInput,
-		descInput:    descInput,
-		ownerInput:   ownerInput,
-		statuses:     statuses,
-		groups:       groups,
+		taskStore:      taskStore,
+		groupStore:     groupStore,
+		isNew:          isNew,
+		subjectInput:   subjectInput,
+		descInput:      descInput,
+		ownerInput:     ownerInput,
+		blocksInput:    blocksInput,
+		blockedByInput: blockedByInput,
+		statuses:       statuses,
+		groups:         groups,
+		pickerSearch:   pickerSearch,
+		pickerSelected: make(map[string]bool),
 	}
 
 	if isNew {
@@ -97,6 +132,8 @@ func NewEditModel(task *data.Task, taskStore *data.TaskStore, groupStore *data.G
 		m.subjectInput.SetValue(task.Subject)
 		m.descInput.SetValue(task.Description)
 		m.ownerInput.SetValue(task.Owner)
+		m.blocksInput.SetValue(strings.Join(task.Blocks, ", "))
+		m.blockedByInput.SetValue(strings.Join(task.BlockedBy, ", "))
 
 		// Find status index
 		for i, s := range statuses {
@@ -128,6 +165,11 @@ func (m EditModel) Init() tea.Cmd {
 func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 	var cmd tea.Cmd
 
+	// Handle picker mode
+	if m.pickerActive {
+		return m.updatePicker(msg)
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -137,12 +179,18 @@ func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 			return m, func() tea.Msg {
 				return CancelEditMsg{}
 			}
+		case "/":
+			// Open picker for blocks/blockedBy fields
+			if m.focusIdx == 5 || m.focusIdx == 6 {
+				m.openPicker(m.focusIdx)
+				return m, textinput.Blink
+			}
 		case "tab", "shift+tab":
-			// Navigate fields
+			// Navigate fields (7 fields: 0-6)
 			if msg.String() == "tab" {
-				m.focusIdx = (m.focusIdx + 1) % 5
+				m.focusIdx = (m.focusIdx + 1) % 7
 			} else {
-				m.focusIdx = (m.focusIdx + 4) % 5
+				m.focusIdx = (m.focusIdx + 6) % 7
 			}
 			m.updateFocus()
 			return m, nil
@@ -176,6 +224,10 @@ func (m EditModel) Update(msg tea.Msg) (EditModel, tea.Cmd) {
 		m.descInput, cmd = m.descInput.Update(msg)
 	case 4:
 		m.ownerInput, cmd = m.ownerInput.Update(msg)
+	case 5:
+		m.blocksInput, cmd = m.blocksInput.Update(msg)
+	case 6:
+		m.blockedByInput, cmd = m.blockedByInput.Update(msg)
 	}
 
 	return m, cmd
@@ -185,6 +237,8 @@ func (m *EditModel) updateFocus() {
 	m.subjectInput.Blur()
 	m.descInput.Blur()
 	m.ownerInput.Blur()
+	m.blocksInput.Blur()
+	m.blockedByInput.Blur()
 
 	switch m.focusIdx {
 	case 0:
@@ -193,6 +247,121 @@ func (m *EditModel) updateFocus() {
 		m.descInput.Focus()
 	case 4:
 		m.ownerInput.Focus()
+	case 5:
+		m.blocksInput.Focus()
+	case 6:
+		m.blockedByInput.Focus()
+	}
+}
+
+func (m *EditModel) openPicker(field int) {
+	m.pickerActive = true
+	m.pickerForField = field
+	m.pickerSearch.SetValue("")
+	m.pickerSearch.Focus()
+	m.pickerCursor = 0
+
+	// Initialize selected from current field value
+	m.pickerSelected = make(map[string]bool)
+	var currentIDs []string
+	if field == 5 {
+		currentIDs = parseTaskIDs(m.blocksInput.Value())
+	} else {
+		currentIDs = parseTaskIDs(m.blockedByInput.Value())
+	}
+	for _, id := range currentIDs {
+		m.pickerSelected[id] = true
+	}
+
+	m.filterPickerTasks()
+}
+
+func (m *EditModel) filterPickerTasks() {
+	query := strings.ToLower(m.pickerSearch.Value())
+	m.pickerTasks = nil
+
+	for _, task := range m.taskStore.Tasks {
+		// Skip self
+		if !m.isNew && task.ID == m.task.ID {
+			continue
+		}
+
+		// Filter by query
+		if query != "" {
+			if !strings.Contains(strings.ToLower(task.Subject), query) &&
+				!strings.Contains(task.ID, query) {
+				continue
+			}
+		}
+
+		m.pickerTasks = append(m.pickerTasks, task)
+	}
+
+	// Reset cursor if out of bounds
+	if m.pickerCursor >= len(m.pickerTasks) {
+		m.pickerCursor = len(m.pickerTasks) - 1
+	}
+	if m.pickerCursor < 0 {
+		m.pickerCursor = 0
+	}
+}
+
+func (m EditModel) updatePicker(msg tea.Msg) (EditModel, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "esc":
+			m.pickerActive = false
+			m.updateFocus()
+			return m, nil
+		case "enter":
+			// Toggle selection
+			if len(m.pickerTasks) > 0 && m.pickerCursor < len(m.pickerTasks) {
+				id := m.pickerTasks[m.pickerCursor].ID
+				m.pickerSelected[id] = !m.pickerSelected[id]
+			}
+			return m, nil
+		case "tab":
+			// Confirm and close picker
+			m.applyPickerSelection()
+			m.pickerActive = false
+			m.updateFocus()
+			return m, nil
+		case "up":
+			if m.pickerCursor > 0 {
+				m.pickerCursor--
+			}
+			return m, nil
+		case "down":
+			if m.pickerCursor < len(m.pickerTasks)-1 {
+				m.pickerCursor++
+			}
+			return m, nil
+		}
+	}
+
+	// Update search input
+	m.pickerSearch, cmd = m.pickerSearch.Update(msg)
+	m.filterPickerTasks()
+
+	return m, cmd
+}
+
+func (m *EditModel) applyPickerSelection() {
+	var ids []string
+	for id, selected := range m.pickerSelected {
+		if selected {
+			ids = append(ids, id)
+		}
+	}
+	value := strings.Join(ids, ", ")
+
+	if m.pickerForField == 5 {
+		m.blocksInput.SetValue(value)
+	} else {
+		m.blockedByInput.SetValue(value)
 	}
 }
 
@@ -208,6 +377,10 @@ func (m *EditModel) save() tea.Cmd {
 	m.task.Description = strings.TrimSpace(m.descInput.Value())
 	m.task.Status = m.statuses[m.statusIdx]
 	m.task.Owner = strings.TrimSpace(m.ownerInput.Value())
+
+	// Parse blocks
+	m.task.Blocks = parseTaskIDs(m.blocksInput.Value())
+	m.task.BlockedBy = parseTaskIDs(m.blockedByInput.Value())
 
 	// Set group
 	if m.groupIdx > 0 {
@@ -242,6 +415,11 @@ func (m EditModel) View() string {
 	}
 	b.WriteString(ui.Header(title, m.width))
 	b.WriteString("\n\n")
+
+	// Picker overlay
+	if m.pickerActive {
+		return m.renderPicker()
+	}
 
 	// Subject field
 	if m.focusIdx == 0 {
@@ -309,17 +487,137 @@ func (m EditModel) View() string {
 	}
 	b.WriteString("\n")
 	b.WriteString(m.ownerInput.View())
+	b.WriteString("\n\n")
+
+	// Blocks field
+	if m.focusIdx == 5 {
+		b.WriteString(ui.SelectedStyle.Render("Blocks:"))
+	} else {
+		b.WriteString(ui.InputLabelStyle.Render("Blocks:"))
+	}
+	b.WriteString(ui.MutedStyle.Render(" (tasks that wait for this)"))
+	b.WriteString("\n")
+	b.WriteString(m.blocksInput.View())
+	b.WriteString("\n\n")
+
+	// BlockedBy field
+	if m.focusIdx == 6 {
+		b.WriteString(ui.SelectedStyle.Render("Blocked By:"))
+	} else {
+		b.WriteString(ui.InputLabelStyle.Render("Blocked By:"))
+	}
+	b.WriteString(ui.MutedStyle.Render(" (tasks this waits for)"))
+	b.WriteString("\n")
+	b.WriteString(m.blockedByInput.View())
 	b.WriteString("\n")
 
 	// Footer
 	b.WriteString("\n")
-	saveKey := "Ctrl+S"
+	var keys [][]string
+	if m.focusIdx == 5 || m.focusIdx == 6 {
+		keys = [][]string{
+			{"Tab", "Next Field"},
+			{"/", "Search Tasks"},
+			{"Ctrl+S", "Save"},
+			{"Esc", "Cancel"},
+		}
+	} else {
+		keys = [][]string{
+			{"Tab", "Next Field"},
+			{"Ctrl+S", "Save"},
+			{"Esc", "Cancel"},
+		}
+	}
+	b.WriteString(ui.Footer(keys, m.width))
+
+	return b.String()
+}
+
+func (m EditModel) renderPicker() string {
+	var b strings.Builder
+
+	// Header
+	fieldName := "Blocks"
+	if m.pickerForField == 6 {
+		fieldName = "Blocked By"
+	}
+	b.WriteString(ui.Header(fmt.Sprintf("Select Tasks for %s", fieldName), m.width))
+	b.WriteString("\n\n")
+
+	// Search
+	b.WriteString(ui.InputLabelStyle.Render("Search:"))
+	b.WriteString("\n")
+	b.WriteString(m.pickerSearch.View())
+	b.WriteString("\n\n")
+
+	// Task list
+	b.WriteString(ui.HorizontalLine(m.width))
+	b.WriteString("\n")
+
+	if len(m.pickerTasks) == 0 {
+		b.WriteString(ui.MutedStyle.Render("No tasks found."))
+		b.WriteString("\n")
+	} else {
+		maxVisible := 10
+		startIdx := 0
+		if m.pickerCursor >= maxVisible {
+			startIdx = m.pickerCursor - maxVisible + 1
+		}
+		endIdx := startIdx + maxVisible
+		if endIdx > len(m.pickerTasks) {
+			endIdx = len(m.pickerTasks)
+		}
+
+		for i := startIdx; i < endIdx; i++ {
+			task := m.pickerTasks[i]
+			prefix := "  "
+			if i == m.pickerCursor {
+				prefix = "> "
+			}
+
+			checkbox := "[ ]"
+			if m.pickerSelected[task.ID] {
+				checkbox = "[✓]"
+			}
+
+			statusIcon := data.StatusIcon(task.Status)
+			line := fmt.Sprintf("%s%s #%s %s %s", prefix, checkbox, task.ID, statusIcon, task.Subject)
+
+			if i == m.pickerCursor {
+				b.WriteString(ui.SelectedStyle.Render(line))
+			} else {
+				b.WriteString(line)
+			}
+			b.WriteString("\n")
+		}
+	}
+
+	// Footer
+	b.WriteString("\n")
 	keys := [][]string{
-		{"Tab", "Next Field"},
-		{saveKey, "Save"},
+		{"↑↓", "Navigate"},
+		{"Enter", "Toggle"},
+		{"Tab", "Confirm"},
 		{"Esc", "Cancel"},
 	}
 	b.WriteString(ui.Footer(keys, m.width))
 
 	return b.String()
+}
+
+// parseTaskIDs parses comma-separated task IDs
+func parseTaskIDs(input string) []string {
+	if strings.TrimSpace(input) == "" {
+		return []string{}
+	}
+
+	parts := strings.Split(input, ",")
+	var ids []string
+	for _, part := range parts {
+		id := strings.TrimSpace(part)
+		if id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }
