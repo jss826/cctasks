@@ -361,7 +361,7 @@ func (m TasksModel) View() string {
 	b.WriteString(ui.Header(title, m.width))
 	b.WriteString("\n")
 
-	// Filter bar
+	// Filter bar - line 1: Status and Group filters
 	statusLabel := "All"
 	if m.statusFilter != "" {
 		statusLabel = m.statusFilter
@@ -371,9 +371,14 @@ func (m TasksModel) View() string {
 		groupLabel = m.groupFilter
 	}
 
-	filterBar := fmt.Sprintf("Filter: [%s] [%s]  Search: [%s]",
-		statusLabel, groupLabel, m.searchInput.View())
-	b.WriteString(ui.FilterBarStyle.Render(filterBar))
+	// Pad status to fixed width (max: "in_progress" = 11 chars)
+	filterLine := fmt.Sprintf("Status (f): [%-11s]    Group (g): [%s]", statusLabel, groupLabel)
+	b.WriteString(ui.FilterBarStyle.Render(filterLine))
+	b.WriteString("\n")
+
+	// Filter bar - line 2: Search
+	searchLine := fmt.Sprintf("Search (/): %s", m.searchInput.View())
+	b.WriteString(ui.FilterBarStyle.Render(searchLine))
 	b.WriteString("\n")
 
 	b.WriteString(ui.HorizontalLine(m.width))
@@ -441,9 +446,7 @@ func (m TasksModel) View() string {
 		{Key: "n", Desc: "New", Enabled: true},
 		{Key: "e", Desc: "Edit", Enabled: taskSelected},
 		{Key: "s", Desc: "Status", Enabled: taskSelected},
-		{Key: "f", Desc: "Filter", Enabled: true},
 		{Key: "G", Desc: "Groups", Enabled: true},
-		{Key: "/", Desc: "Search", Enabled: true},
 		{Key: "Ctrl+L", Desc: "Redraw", Enabled: true},
 		{Key: "Esc", Desc: "Back", Enabled: true},
 		{Key: "q", Desc: "Quit", Enabled: true},
