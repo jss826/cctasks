@@ -1,10 +1,24 @@
 package model
 
 import (
+	"os"
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
+	"golang.org/x/term"
 
 	"github.com/jss826/cctasks/internal/data"
 )
+
+// checkSizeMsg is sent periodically to check for terminal resize (Windows workaround)
+type checkSizeMsg struct{}
+
+// checkSizeCmd returns a command that periodically checks terminal size
+func checkSizeCmd() tea.Cmd {
+	return tea.Tick(time.Second/10, func(t time.Time) tea.Msg {
+		return checkSizeMsg{}
+	})
+}
 
 // AppVersion is set from main.go
 var AppVersion = "dev"
@@ -55,12 +69,48 @@ func NewApp() App {
 
 // Init initializes the application
 func (a App) Init() tea.Cmd {
-	return a.projects.Init()
+	return tea.Batch(a.projects.Init(), checkSizeCmd())
 }
 
 // Update handles messages
 func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case checkSizeMsg:
+		// Poll terminal size (Windows workaround for no SIGWINCH)
+		// Try stdin first (works better with alt screen), fallback to stdout
+		fd := int(os.Stdin.Fd())
+		w, h, err := term.GetSize(fd)
+		if err != nil {
+			fd = int(os.Stdout.Fd())
+			w, h, err = term.GetSize(fd)
+		}
+		if err != nil {
+			return a, checkSizeCmd()
+		}
+		if w != a.width || h != a.height {
+			a.width = w
+			a.height = h
+			// Propagate to sub-models
+			a.projects.width = w
+			a.projects.height = h
+			a.tasks.width = w
+			a.tasks.height = h
+			a.detail.width = w
+			a.detail.height = h
+			a.edit.width = w
+			a.edit.height = h
+			a.groups.width = w
+			a.groups.height = h
+			a.groupEdit.width = w
+			a.groupEdit.height = h
+			// Clear screen and continue polling
+			return a, tea.Batch(
+				func() tea.Msg { return tea.ClearScreen() },
+				checkSizeCmd(),
+			)
+		}
+		return a, checkSizeCmd()
+
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
 		a.height = msg.Height
@@ -77,8 +127,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.groups.height = msg.Height
 		a.groupEdit.width = msg.Width
 		a.groupEdit.height = msg.Height
-		// Force clear screen on resize
-		return a, func() tea.Msg { return tea.ClearScreen() }
+		return a, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -281,8 +330,6 @@ func (a App) View() string {
 		}
 	}
 
-	// Return content directly without lipgloss.Place
-	// (lipgloss miscalculates width of "─" character)
 	return content
 }
 

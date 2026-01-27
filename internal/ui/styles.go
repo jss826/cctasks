@@ -195,9 +195,11 @@ func ColorSwatchStyle(color string) lipgloss.Style {
 		Width(2)
 }
 
-// Horizontal line
+// Horizontal line (avoid lipgloss.Render to prevent width miscalculation)
 func HorizontalLine(width int) string {
-	return lipgloss.NewStyle().Foreground(BorderColor).Render(repeatString("─", width))
+	line := repeatString("─", width)
+	// BorderColor is #6b7089 = RGB(107, 112, 137)
+	return "\x1b[38;2;107;112;137m" + line + "\x1b[0m"
 }
 
 // repeatString repeats a string n times

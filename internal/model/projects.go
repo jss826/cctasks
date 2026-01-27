@@ -81,7 +81,7 @@ func (m ProjectsModel) Update(msg tea.Msg) (ProjectsModel, tea.Cmd) {
 func (m ProjectsModel) View() string {
 	var b strings.Builder
 
-	// Header with version (subtract 4 for AppStyle padding)
+	// Header with version
 	title := fmt.Sprintf("cctasks v%s", AppVersion)
 	b.WriteString(ui.Header(title, m.width))
 	b.WriteString("\n\n")
