@@ -59,7 +59,7 @@ func (m ProjectsModel) Update(msg tea.Msg) (ProjectsModel, tea.Cmd) {
 			if m.cursor < len(m.projects)-1 {
 				m.cursor++
 			}
-		case "enter":
+		case "enter", "right":
 			if len(m.projects) > 0 {
 				return m, func() tea.Msg {
 					return SelectProjectMsg{Name: m.projects[m.cursor].Name}

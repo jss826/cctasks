@@ -223,6 +223,16 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 					}
 				}
 			}
+		case "right":
+			// Only go to detail when task is selected (not group)
+			if len(m.items) > 0 {
+				item := m.items[m.cursor]
+				if !item.isGroup && item.task != nil {
+					return m, func() tea.Msg {
+						return ViewTaskMsg{Task: item.task}
+					}
+				}
+			}
 		case "n":
 			return m, func() tea.Msg {
 				return NewTaskMsg{}

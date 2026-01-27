@@ -60,7 +60,7 @@ func (m DetailModel) Update(msg tea.Msg) (DetailModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
+		case "esc", "left":
 			return m, func() tea.Msg {
 				return BackToTasksMsg{}
 			}

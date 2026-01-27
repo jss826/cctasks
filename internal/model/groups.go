@@ -71,7 +71,7 @@ func (m GroupsModel) Update(msg tea.Msg) (GroupsModel, tea.Cmd) {
 			if m.cursor < len(m.groupStore.Groups)-1 {
 				m.cursor++
 			}
-		case "enter", "e":
+		case "enter", "e", "right":
 			if len(m.groupStore.Groups) > 0 {
 				group := &m.groupStore.Groups[m.cursor]
 				return m, func() tea.Msg {
@@ -108,7 +108,7 @@ func (m GroupsModel) Update(msg tea.Msg) (GroupsModel, tea.Cmd) {
 					}
 				}
 			}
-		case "esc":
+		case "esc", "left":
 			return m, func() tea.Msg {
 				return BackFromGroupsMsg{}
 			}
