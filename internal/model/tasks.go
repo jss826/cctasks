@@ -25,10 +25,11 @@ type TasksModel struct {
 	items  []taskListItem // Flattened list of groups and tasks
 
 	// Filtering
-	statusFilter string   // "", "pending", "in_progress", "completed"
-	groupFilter  string   // "", or group name
-	searchInput  textinput.Model
-	searchActive bool
+	statusFilter  string // "", "pending", "in_progress", "completed"
+	groupFilter   string // "", or group name
+	hideCompleted bool   // hide completed tasks
+	searchInput   textinput.Model
+	searchActive  bool
 
 	// Group collapsed state
 	collapsedGroups map[string]bool
@@ -109,6 +110,11 @@ func (m *TasksModel) rebuildItems() {
 	for _, task := range m.taskStore.Tasks {
 		// Status filter
 		if m.statusFilter != "" && task.Status != m.statusFilter {
+			continue
+		}
+
+		// Hide completed filter
+		if m.hideCompleted && task.Status == "completed" {
 			continue
 		}
 
@@ -243,6 +249,12 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 			if m.cursor < len(m.items)-1 {
 				m.cursor++
 			}
+		case "home":
+			m.cursor = 0
+		case "end":
+			if len(m.items) > 0 {
+				m.cursor = len(m.items) - 1
+			}
 		case "enter":
 			if len(m.items) > 0 {
 				item := m.items[m.cursor]
@@ -288,6 +300,9 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 			m.rebuildItems()
 		case "g":
 			m.cycleGroupFilter()
+			m.rebuildItems()
+		case "h":
+			m.hideCompleted = !m.hideCompleted
 			m.rebuildItems()
 		case "G":
 			return m, func() tea.Msg {
@@ -376,8 +391,12 @@ func (m TasksModel) View() string {
 	b.WriteString(ui.FilterBarStyle.Render(filterLine))
 	b.WriteString("\n")
 
-	// Filter bar - line 2: Search
-	searchLine := fmt.Sprintf("Search (/): %s", m.searchInput.View())
+	// Filter bar - line 2: Search and Hide completed toggle
+	hideLabel := "Show"
+	if m.hideCompleted {
+		hideLabel = "Hide"
+	}
+	searchLine := fmt.Sprintf("Search (/): %s    Completed (h): [%s]", m.searchInput.View(), hideLabel)
 	b.WriteString(ui.FilterBarStyle.Render(searchLine))
 	b.WriteString("\n")
 
