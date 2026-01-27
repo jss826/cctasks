@@ -7,11 +7,15 @@ Claude Code の Task List 機能で作成されたタスクを閲覧・編集で
 - プロジェクト一覧表示・選択
 - タスク一覧（グループ別折りたたみ表示）
 - ステータス / グループ / キーワードフィルタ
+- 完了タスク非表示トグル
+- ソート機能（ID順 / ステータス順）
 - タスク作成・編集・削除
 - ステータスのクイック変更
+- 依存関係（Blocks / BlockedBy）の編集・タスク検索ピッカー
 - グループ管理（作成・編集・削除・並び替え・色設定）
 - ファイル変更の自動検出・更新（操作時）
-- キーボードナビゲーション
+- キーボードナビゲーション（Home/End対応）
+- スクロールインジケーター・グループ統計表示
 
 ## Requirements
 
@@ -77,16 +81,18 @@ Claude Code v2.1.16 以降で Task List 機能を有効にする方法:
 | Key | Action |
 |-----|--------|
 | `↑/↓` or `j/k` | Navigate |
+| `Home/End` | Jump to first/last |
 | `Enter` | View details / Toggle group |
 | `n` | New task |
 | `e` | Edit task |
 | `s` | Quick status change |
 | `f` | Cycle status filter |
 | `g` | Cycle group filter |
+| `h` | Toggle hide completed |
+| `o` | Cycle sort mode |
 | `G` | Manage groups |
 | `/` | Search |
 | `p` | Back to projects |
-| `r` | Refresh |
 | `q` | Quit |
 
 ### Task Detail
@@ -104,6 +110,7 @@ Claude Code v2.1.16 以降で Task List 機能を有効にする方法:
 | `Tab` | Next field |
 | `Shift+Tab` | Previous field |
 | `↑/↓` | Change status/group (when focused) |
+| `/` | Open task picker (on Blocks/BlockedBy) |
 | `Ctrl+S` | Save |
 | `Esc` | Cancel |
 
