@@ -129,6 +129,23 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.groupEdit.height = msg.Height
 		return a, nil
 
+	case tea.MouseMsg:
+		// Auto-reload on mouse click if data has changed
+		if a.projectName != "" && a.taskStore != nil && a.screen != ScreenGroups && a.screen != ScreenGroupEdit && a.screen != ScreenEdit {
+			needsReload := a.taskStore.NeedsReload()
+			if a.groupStore != nil && a.groupStore.NeedsReload() {
+				needsReload = true
+			}
+			if needsReload {
+				a.taskStore, _ = data.LoadTasks(a.projectName)
+				a.groupStore, _ = data.LoadGroups(a.projectName)
+				switch a.screen {
+				case ScreenTasks:
+					a.tasks.ReloadData(a.taskStore, a.groupStore)
+				}
+			}
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
