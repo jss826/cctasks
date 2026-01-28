@@ -57,11 +57,11 @@ func (m ProjectsModel) Update(msg tea.Msg) (ProjectsModel, tea.Cmd) {
 	case tea.MouseMsg:
 		if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
 			// Calculate which item was clicked
-			// Header(2) + empty(2) + Title(1) + Line(1) + empty(2) = 8 lines before list
+			// Header(2: title+line) + empty(1) + Title(1) + Line(1) + empty(1) = 6 lines before list
 			// If help is shown, add more lines
-			headerLines := 8
+			headerLines := 6
 			if len(m.projects) == 0 || m.showHelp {
-				headerLines += 15 // Approximate help text lines
+				headerLines += 18 // Help text lines
 			}
 			clickedIdx := msg.Y - headerLines
 			if clickedIdx >= 0 && clickedIdx < len(m.projects) {

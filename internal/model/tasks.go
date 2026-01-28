@@ -269,9 +269,8 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.MouseMsg:
 		if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
-			// Calculate header lines
-			// Header(1) + Filter1(1) + Filter2(1) + Filter3(1) + HorizontalLine(1) = 5
-			headerLines := 5
+			// Calculate header lines (empirically determined)
+			headerLines := 9
 			if m.statusChangeMode {
 				headerLines += 2
 			}
