@@ -62,8 +62,18 @@ func NewTasksModel(projectName string, taskStore *data.TaskStore, groupStore *da
 		groupStore:      groupStore,
 		searchInput:     ti,
 		collapsedGroups: make(map[string]bool),
+		hideCompleted:   true, // Hide completed tasks by default
 	}
 	m.rebuildItems()
+
+	// Collapse all groups by default
+	for _, item := range m.items {
+		if item.isGroup {
+			m.collapsedGroups[item.groupName] = true
+		}
+	}
+	m.rebuildItems()
+
 	return m
 }
 

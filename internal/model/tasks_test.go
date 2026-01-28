@@ -186,29 +186,35 @@ func TestTasksModel_HideCompleted(t *testing.T) {
 	m.width = 80
 	m.height = 24
 
-	// Initial hideCompleted is false
-	if m.hideCompleted {
-		t.Error("Expected initial hideCompleted to be false")
+	// Initial hideCompleted is true (default)
+	if !m.hideCompleted {
+		t.Error("Expected initial hideCompleted to be true")
 	}
+
+	// Expand all groups first to see the tasks
+	for groupName := range m.collapsedGroups {
+		m.collapsedGroups[groupName] = false
+	}
+	m.rebuildItems()
 
 	initialCount := len(m.items)
 
-	// Press h to toggle hide completed
-	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
-	if !m.hideCompleted {
-		t.Error("Expected hideCompleted to be true after 'h'")
-	}
-
-	// Should have fewer visible items (we have 1 completed task)
-	newCount := len(m.items)
-	if newCount >= initialCount {
-		t.Errorf("Expected fewer items after hiding completed, got %d (was %d)", newCount, initialCount)
-	}
-
-	// Toggle back
+	// Press h to toggle (show completed)
 	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
 	if m.hideCompleted {
-		t.Error("Expected hideCompleted to be false after toggling again")
+		t.Error("Expected hideCompleted to be false after 'h'")
+	}
+
+	// Should have more visible items (we have 1 completed task)
+	newCount := len(m.items)
+	if newCount <= initialCount {
+		t.Errorf("Expected more items after showing completed, got %d (was %d)", newCount, initialCount)
+	}
+
+	// Toggle back to hide
+	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	if !m.hideCompleted {
+		t.Error("Expected hideCompleted to be true after toggling again")
 	}
 }
 
@@ -274,29 +280,29 @@ func TestTasksModel_ToggleGroup(t *testing.T) {
 			m.cursor = i
 			initialCount := len(m.items)
 
-			// Group should not be collapsed initially
-			if m.collapsedGroups[item.groupName] {
-				t.Error("Expected group to not be collapsed initially")
-			}
-
-			// Press Enter to toggle
-			m, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-
-			// Group should now be collapsed
+			// Group should be collapsed initially (default)
 			if !m.collapsedGroups[item.groupName] {
-				t.Error("Expected group to be collapsed after Enter")
+				t.Error("Expected group to be collapsed initially")
 			}
 
-			// Should have fewer items visible
-			newCount := len(m.items)
-			if newCount >= initialCount {
-				t.Errorf("Expected fewer items after collapse, got %d (was %d)", newCount, initialCount)
-			}
-
-			// Toggle back
+			// Press Enter to toggle (expand)
 			m, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+			// Group should now be expanded
 			if m.collapsedGroups[item.groupName] {
-				t.Error("Expected group to be expanded after second Enter")
+				t.Error("Expected group to be expanded after Enter")
+			}
+
+			// Should have more items visible
+			newCount := len(m.items)
+			if newCount <= initialCount {
+				t.Errorf("Expected more items after expand, got %d (was %d)", newCount, initialCount)
+			}
+
+			// Toggle back to collapse
+			m, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+			if !m.collapsedGroups[item.groupName] {
+				t.Error("Expected group to be collapsed after second Enter")
 			}
 
 			break
@@ -312,7 +318,25 @@ func TestTasksModel_Items(t *testing.T) {
 	m.width = 80
 	m.height = 24
 
-	// Should have tasks
+	// Groups are collapsed by default, so we should have group headers
+	hasGroups := false
+	for _, item := range m.items {
+		if item.isGroup {
+			hasGroups = true
+			break
+		}
+	}
+
+	if !hasGroups {
+		t.Error("Expected to have group items")
+	}
+
+	// Expand all groups to verify tasks exist
+	for groupName := range m.collapsedGroups {
+		m.collapsedGroups[groupName] = false
+	}
+	m.rebuildItems()
+
 	hasTasks := false
 	for _, item := range m.items {
 		if !item.isGroup {
@@ -322,7 +346,7 @@ func TestTasksModel_Items(t *testing.T) {
 	}
 
 	if !hasTasks {
-		t.Error("Expected to have task items")
+		t.Error("Expected to have task items after expanding groups")
 	}
 }
 
@@ -333,6 +357,12 @@ func TestTasksModel_QuickStatusChange(t *testing.T) {
 	m := NewTasksModel("test", taskStore, groupStore)
 	m.width = 80
 	m.height = 24
+
+	// Expand all groups first to see tasks
+	for groupName := range m.collapsedGroups {
+		m.collapsedGroups[groupName] = false
+	}
+	m.rebuildItems()
 
 	// Find first task (not a group)
 	foundTask := false
@@ -375,6 +405,12 @@ func TestTasksModel_QuickStatusChangeCancel(t *testing.T) {
 	m := NewTasksModel("test", taskStore, groupStore)
 	m.width = 80
 	m.height = 24
+
+	// Expand all groups first to see tasks
+	for groupName := range m.collapsedGroups {
+		m.collapsedGroups[groupName] = false
+	}
+	m.rebuildItems()
 
 	// Find first task
 	for i, item := range m.items {
