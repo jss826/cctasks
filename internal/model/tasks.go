@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbletea"
@@ -40,6 +41,10 @@ type TasksModel struct {
 
 	// Quick status change mode
 	statusChangeMode bool
+
+	// Double-click detection
+	lastClickTime time.Time
+	lastClickIdx  int
 }
 
 // taskListItem represents an item in the flattened task list
@@ -293,16 +298,29 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 			if clickedRow >= 0 {
 				clickedIdx := startIdx + clickedRow
 				if clickedIdx >= 0 && clickedIdx < len(m.items) {
-					m.cursor = clickedIdx
-					item := m.items[m.cursor]
-					if item.isGroup {
-						// Toggle collapse
-						m.collapsedGroups[item.groupName] = !m.collapsedGroups[item.groupName]
-						m.rebuildItems()
-					} else if item.task != nil {
-						return m, func() tea.Msg {
-							return ViewTaskMsg{Task: item.task}
+					now := time.Now()
+					isDoubleClick := clickedIdx == m.lastClickIdx && now.Sub(m.lastClickTime) < 400*time.Millisecond
+
+					if isDoubleClick || clickedIdx == m.cursor {
+						// Double-click or click on current cursor: perform action
+						m.cursor = clickedIdx
+						m.lastClickTime = now
+						m.lastClickIdx = clickedIdx
+						item := m.items[m.cursor]
+						if item.isGroup {
+							// Toggle collapse
+							m.collapsedGroups[item.groupName] = !m.collapsedGroups[item.groupName]
+							m.rebuildItems()
+						} else if item.task != nil {
+							return m, func() tea.Msg {
+								return ViewTaskMsg{Task: item.task}
+							}
 						}
+					} else {
+						// Single click on different row: move cursor only
+						m.cursor = clickedIdx
+						m.lastClickTime = now
+						m.lastClickIdx = clickedIdx
 					}
 				}
 			}

@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbletea"
@@ -19,6 +20,10 @@ type GroupsModel struct {
 
 	cursor        int
 	confirmDelete bool
+
+	// Double-click detection
+	lastClickTime time.Time
+	lastClickIdx  int
 }
 
 // NewGroupsModel creates a new GroupsModel
@@ -70,11 +75,23 @@ func (m GroupsModel) Update(msg tea.Msg) (GroupsModel, tea.Cmd) {
 			}
 			clickedIdx := msg.Y - headerLines
 			if clickedIdx >= 0 && clickedIdx < len(m.groupStore.Groups) {
-				m.cursor = clickedIdx
-				group := &m.groupStore.Groups[m.cursor]
-				return m, func() tea.Msg {
-					return EditGroupMsg{Group: group, IsNew: false}
+				now := time.Now()
+				isDoubleClick := clickedIdx == m.lastClickIdx && now.Sub(m.lastClickTime) < 400*time.Millisecond
+
+				if isDoubleClick || clickedIdx == m.cursor {
+					// Double-click or click on current cursor: edit
+					m.cursor = clickedIdx
+					m.lastClickTime = now
+					m.lastClickIdx = clickedIdx
+					group := &m.groupStore.Groups[m.cursor]
+					return m, func() tea.Msg {
+						return EditGroupMsg{Group: group, IsNew: false}
+					}
 				}
+				// Single click on different row: move cursor only
+				m.cursor = clickedIdx
+				m.lastClickTime = now
+				m.lastClickIdx = clickedIdx
 			}
 		}
 		return m, nil

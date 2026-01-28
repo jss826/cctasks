@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbletea"
 
@@ -18,6 +19,10 @@ type ProjectsModel struct {
 	height   int
 	err      error
 	showHelp bool
+
+	// Double-click detection
+	lastClickTime time.Time
+	lastClickIdx  int
 }
 
 // NewProjectsModel creates a new ProjectsModel
@@ -60,10 +65,22 @@ func (m ProjectsModel) Update(msg tea.Msg) (ProjectsModel, tea.Cmd) {
 			}
 			clickedIdx := msg.Y - headerLines
 			if clickedIdx >= 0 && clickedIdx < len(m.projects) {
-				m.cursor = clickedIdx
-				return m, func() tea.Msg {
-					return SelectProjectMsg{Name: m.projects[m.cursor].Name}
+				now := time.Now()
+				isDoubleClick := clickedIdx == m.lastClickIdx && now.Sub(m.lastClickTime) < 400*time.Millisecond
+
+				if isDoubleClick || clickedIdx == m.cursor {
+					// Double-click or click on current cursor: select
+					m.cursor = clickedIdx
+					m.lastClickTime = now
+					m.lastClickIdx = clickedIdx
+					return m, func() tea.Msg {
+						return SelectProjectMsg{Name: m.projects[m.cursor].Name}
+					}
 				}
+				// Single click on different row: move cursor only
+				m.cursor = clickedIdx
+				m.lastClickTime = now
+				m.lastClickIdx = clickedIdx
 			}
 		}
 		return m, nil
