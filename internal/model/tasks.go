@@ -262,6 +262,53 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
+			// Calculate header lines
+			// Header(1) + Filter1(1) + Filter2(1) + Filter3(1) + HorizontalLine(1) = 5
+			headerLines := 5
+			if m.statusChangeMode {
+				headerLines += 2
+			}
+			if m.searchActive {
+				headerLines += 2
+			}
+
+			// Calculate scroll offset (same logic as View)
+			maxVisible := m.height - 15
+			if maxVisible < 5 {
+				maxVisible = 10
+			}
+			startIdx := 0
+			if m.cursor >= maxVisible {
+				startIdx = m.cursor - maxVisible + 1
+			}
+
+			// Add scroll indicator line if present
+			if startIdx > 0 {
+				headerLines++
+			}
+
+			clickedRow := msg.Y - headerLines
+			if clickedRow >= 0 {
+				clickedIdx := startIdx + clickedRow
+				if clickedIdx >= 0 && clickedIdx < len(m.items) {
+					m.cursor = clickedIdx
+					item := m.items[m.cursor]
+					if item.isGroup {
+						// Toggle collapse
+						m.collapsedGroups[item.groupName] = !m.collapsedGroups[item.groupName]
+						m.rebuildItems()
+					} else if item.task != nil {
+						return m, func() tea.Msg {
+							return ViewTaskMsg{Task: item.task}
+						}
+					}
+				}
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "k":

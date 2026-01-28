@@ -49,6 +49,25 @@ func (m ProjectsModel) Update(msg tea.Msg) (ProjectsModel, tea.Cmd) {
 		m.projects = msg.projects
 		return m, nil
 
+	case tea.MouseMsg:
+		if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
+			// Calculate which item was clicked
+			// Header(2) + empty(2) + Title(1) + Line(1) + empty(2) = 8 lines before list
+			// If help is shown, add more lines
+			headerLines := 8
+			if len(m.projects) == 0 || m.showHelp {
+				headerLines += 15 // Approximate help text lines
+			}
+			clickedIdx := msg.Y - headerLines
+			if clickedIdx >= 0 && clickedIdx < len(m.projects) {
+				m.cursor = clickedIdx
+				return m, func() tea.Msg {
+					return SelectProjectMsg{Name: m.projects[m.cursor].Name}
+				}
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "k":

@@ -61,6 +61,24 @@ func (m GroupsModel) Update(msg tea.Msg) (GroupsModel, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		if msg.Action == tea.MouseActionRelease && msg.Button == tea.MouseButtonLeft {
+			// Header(1) + empty(2) = 3 lines before list
+			headerLines := 3
+			if m.confirmDelete {
+				headerLines += 5 // Approximate dialog lines
+			}
+			clickedIdx := msg.Y - headerLines
+			if clickedIdx >= 0 && clickedIdx < len(m.groupStore.Groups) {
+				m.cursor = clickedIdx
+				group := &m.groupStore.Groups[m.cursor]
+				return m, func() tea.Msg {
+					return EditGroupMsg{Group: group, IsNew: false}
+				}
+			}
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "k":
