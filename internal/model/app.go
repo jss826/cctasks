@@ -121,8 +121,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.tasks.height = msg.Height
 		a.detail.width = msg.Width
 		a.detail.height = msg.Height
-		a.edit.width = msg.Width
-		a.edit.height = msg.Height
+		a.edit.SetSize(msg.Width, msg.Height)
 		a.groups.width = msg.Width
 		a.groups.height = msg.Height
 		a.groupEdit.width = msg.Width
@@ -214,16 +213,14 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case EditTaskMsg:
 		a.edit = NewEditModel(msg.Task, a.taskStore, a.groupStore, false)
-		a.edit.width = a.width
-		a.edit.height = a.height
+		a.edit.SetSize(a.width, a.height)
 		a.prevScreen = a.screen
 		a.screen = ScreenEdit
 		return a, a.edit.Init()
 
 	case NewTaskMsg:
 		a.edit = NewEditModel(nil, a.taskStore, a.groupStore, true)
-		a.edit.width = a.width
-		a.edit.height = a.height
+		a.edit.SetSize(a.width, a.height)
 		a.prevScreen = a.screen
 		a.screen = ScreenEdit
 		return a, a.edit.Init()

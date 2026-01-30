@@ -118,7 +118,7 @@ func (m ProjectsModel) View() string {
 	var b strings.Builder
 
 	// Header with version
-	title := fmt.Sprintf("cctasks v%s", AppVersion)
+	title := fmt.Sprintf("cctasks %s", AppVersion)
 	b.WriteString(ui.Header(title, m.width))
 	b.WriteString("\n\n")
 

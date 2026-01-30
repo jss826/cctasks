@@ -402,10 +402,18 @@ func (m *EditModel) save() tea.Cmd {
 	}
 }
 
-// View renders the edit screen
-func (m EditModel) View() string {
+// SetSize updates the model dimensions and input widths
+func (m *EditModel) SetSize(width, height int) {
+	m.width = width
+	m.height = height
+
+	// Skip updating input widths if model is not yet initialized
+	if m.taskStore == nil {
+		return
+	}
+
 	// Update input widths based on terminal width
-	inputWidth := m.width - 6 // margin for borders and prompt
+	inputWidth := width - 6 // margin for borders and prompt
 	if inputWidth < 40 {
 		inputWidth = 40
 	}
@@ -415,7 +423,10 @@ func (m EditModel) View() string {
 	m.blocksInput.Width = inputWidth
 	m.blockedByInput.Width = inputWidth
 	m.pickerSearch.Width = inputWidth
+}
 
+// View renders the edit screen
+func (m EditModel) View() string {
 	var b strings.Builder
 
 	// Header
