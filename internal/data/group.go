@@ -97,12 +97,39 @@ func LoadGroups(projectName string) (*GroupStore, error) {
 		return gf.Groups[i].Order < gf.Groups[j].Order
 	})
 
-	return &GroupStore{
+	store := &GroupStore{
 		ProjectName: projectName,
 		Groups:      gf.Groups,
 		filePath:    groupsFilePath,
 		lastModTime: modTime,
-	}, nil
+	}
+
+	// Backup groups file (only if source is newer)
+	store.backupGroupsFile(data, modTime)
+
+	return store, nil
+}
+
+// backupGroupsFile backs up groups file if source is newer
+func (s *GroupStore) backupGroupsFile(data []byte, srcModTime time.Time) {
+	backupDir, err := config.GetBackupProjectDir(s.ProjectName)
+	if err != nil {
+		return
+	}
+
+	backupPath := filepath.Join(backupDir, "_groups.json")
+
+	// Check if backup is up-to-date
+	dstInfo, err := os.Stat(backupPath)
+	if err == nil && !srcModTime.After(dstInfo.ModTime()) {
+		return // Backup is up-to-date, skip
+	}
+
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return
+	}
+
+	os.WriteFile(backupPath, data, 0644)
 }
 
 // Save saves groups to the project's _groups.json
@@ -124,7 +151,35 @@ func (s *GroupStore) Save() error {
 		return err
 	}
 
-	return os.WriteFile(groupsFilePath, data, 0644)
+	if err := os.WriteFile(groupsFilePath, data, 0644); err != nil {
+		return err
+	}
+
+	// Backup: write only if content differs
+	s.backupGroupsData(data)
+	return nil
+}
+
+// backupGroupsData backs up groups data to backup directory if content differs
+func (s *GroupStore) backupGroupsData(data []byte) {
+	backupDir, err := config.GetBackupProjectDir(s.ProjectName)
+	if err != nil {
+		return
+	}
+
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return
+	}
+
+	backupPath := filepath.Join(backupDir, "_groups.json")
+
+	// Check if backup exists and has same content
+	existing, err := os.ReadFile(backupPath)
+	if err == nil && string(existing) == string(data) {
+		return // Same content, skip write
+	}
+
+	os.WriteFile(backupPath, data, 0644)
 }
 
 // NeedsReload checks if the groups file has been modified since last load

@@ -404,6 +404,18 @@ func (m *EditModel) save() tea.Cmd {
 
 // View renders the edit screen
 func (m EditModel) View() string {
+	// Update input widths based on terminal width
+	inputWidth := m.width - 6 // margin for borders and prompt
+	if inputWidth < 40 {
+		inputWidth = 40
+	}
+	m.subjectInput.Width = inputWidth
+	m.descInput.SetWidth(inputWidth)
+	m.ownerInput.Width = inputWidth
+	m.blocksInput.Width = inputWidth
+	m.blockedByInput.Width = inputWidth
+	m.pickerSearch.Width = inputWidth
+
 	var b strings.Builder
 
 	// Header

@@ -353,6 +353,13 @@ func (m *GroupEditModel) save() tea.Cmd {
 
 // View renders the group edit dialog
 func (m GroupEditModel) View() string {
+	// Update input width based on terminal width
+	inputWidth := m.width - 6
+	if inputWidth < 30 {
+		inputWidth = 30
+	}
+	m.nameInput.Width = inputWidth
+
 	var b strings.Builder
 
 	// Header

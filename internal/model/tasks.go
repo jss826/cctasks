@@ -470,6 +470,13 @@ func (m *TasksModel) setCurrentTaskStatus(status string) {
 
 // View renders the task list screen
 func (m TasksModel) View() string {
+	// Update search input width based on terminal width
+	searchWidth := m.width - 20 // margin for "Search (/): " prefix
+	if searchWidth < 20 {
+		searchWidth = 20
+	}
+	m.searchInput.Width = searchWidth
+
 	var b strings.Builder
 
 	// Header

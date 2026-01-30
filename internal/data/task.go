@@ -186,12 +186,26 @@ func LoadTasks(projectName string) (*TaskStore, error) {
 		return idI < idJ
 	})
 
-	return &TaskStore{
+	store := &TaskStore{
 		ProjectName: projectName,
 		Tasks:       tasks,
 		projectDir:  projectDir,
 		lastModTime: modTime,
-	}, nil
+	}
+
+	// Backup all task files (only if source is newer)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if strings.HasPrefix(name, "_") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		store.backupFile(name)
+	}
+
+	return store, nil
 }
 
 // Save saves all tasks to individual JSON files
@@ -229,7 +243,72 @@ func (s *TaskStore) saveTask(task Task) error {
 		return err
 	}
 
-	return os.WriteFile(filePath, data, 0644)
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return err
+	}
+
+	// Backup: write only if content differs
+	s.backupTaskData(task.ID+".json", data)
+	return nil
+}
+
+// backupTaskData backs up task data to backup directory if content differs
+func (s *TaskStore) backupTaskData(filename string, data []byte) {
+	backupDir, err := config.GetBackupProjectDir(s.ProjectName)
+	if err != nil {
+		return
+	}
+
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return
+	}
+
+	backupPath := filepath.Join(backupDir, filename)
+
+	// Check if backup exists and has same content
+	existing, err := os.ReadFile(backupPath)
+	if err == nil && string(existing) == string(data) {
+		return // Same content, skip write
+	}
+
+	os.WriteFile(backupPath, data, 0644)
+}
+
+// backupFile copies a file to backup directory if source is newer
+func (s *TaskStore) backupFile(filename string) {
+	projectDir, err := config.GetProjectDir(s.ProjectName)
+	if err != nil {
+		return
+	}
+	backupDir, err := config.GetBackupProjectDir(s.ProjectName)
+	if err != nil {
+		return
+	}
+
+	srcPath := filepath.Join(projectDir, filename)
+	dstPath := filepath.Join(backupDir, filename)
+
+	srcInfo, err := os.Stat(srcPath)
+	if err != nil {
+		return
+	}
+
+	// Check if backup is up-to-date
+	dstInfo, err := os.Stat(dstPath)
+	if err == nil && !srcInfo.ModTime().After(dstInfo.ModTime()) {
+		return // Backup is up-to-date, skip
+	}
+
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return
+	}
+
+	data, err := os.ReadFile(srcPath)
+	if err != nil {
+		return
+	}
+
+	os.WriteFile(dstPath, data, 0644)
 }
 
 // NeedsReload checks if the project directory has been modified since last load
