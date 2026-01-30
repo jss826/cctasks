@@ -203,6 +203,32 @@ func (m *TasksModel) rebuildItems() {
 	}
 }
 
+// GetAdjacentTask returns the next or previous task from the current task ID
+// direction: 1 for next, -1 for previous
+func (m *TasksModel) GetAdjacentTask(currentID string, direction int) *data.Task {
+	// Find current task index in items
+	currentIdx := -1
+	for i, item := range m.items {
+		if !item.isGroup && item.task != nil && item.task.ID == currentID {
+			currentIdx = i
+			break
+		}
+	}
+
+	if currentIdx == -1 {
+		return nil
+	}
+
+	// Search in the given direction
+	for i := currentIdx + direction; i >= 0 && i < len(m.items); i += direction {
+		if !m.items[i].isGroup && m.items[i].task != nil {
+			return m.items[i].task
+		}
+	}
+
+	return nil
+}
+
 func (m *TasksModel) addGroupToItems(groupName string, tasks []data.Task) {
 	// Add group header
 	m.items = append(m.items, taskListItem{

@@ -64,6 +64,16 @@ func (m DetailModel) Update(msg tea.Msg) (DetailModel, tea.Cmd) {
 			return m, func() tea.Msg {
 				return BackToTasksMsg{}
 			}
+		case "j", "down":
+			taskID := m.task.ID
+			return m, func() tea.Msg {
+				return NextTaskMsg{CurrentID: taskID}
+			}
+		case "k", "up":
+			taskID := m.task.ID
+			return m, func() tea.Msg {
+				return PrevTaskMsg{CurrentID: taskID}
+			}
 		case "e":
 			return m, func() tea.Msg {
 				return EditTaskMsg{Task: m.task}
@@ -207,6 +217,7 @@ func (m DetailModel) View() string {
 	} else {
 		hints := []ui.KeyHint{
 			// Navigation
+			{Key: "j/k", Desc: "Next/Prev", Enabled: true},
 			{Key: "Esc", Desc: "Back", Enabled: true},
 			// Task operations
 			{Key: "e", Desc: "Edit", Enabled: true},

@@ -283,6 +283,22 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return a, nil
+
+	case NextTaskMsg:
+		if next := a.tasks.GetAdjacentTask(msg.CurrentID, 1); next != nil {
+			a.detail = NewDetailModel(next, a.taskStore, a.groupStore)
+			a.detail.width = a.width
+			a.detail.height = a.height
+		}
+		return a, nil
+
+	case PrevTaskMsg:
+		if prev := a.tasks.GetAdjacentTask(msg.CurrentID, -1); prev != nil {
+			a.detail = NewDetailModel(prev, a.taskStore, a.groupStore)
+			a.detail.width = a.width
+			a.detail.height = a.height
+		}
+		return a, nil
 	}
 
 	// Delegate to current screen
@@ -375,3 +391,11 @@ type GroupSavedMsg struct {
 type CancelGroupEditMsg struct{}
 
 type RefreshMsg struct{}
+
+type NextTaskMsg struct {
+	CurrentID string
+}
+
+type PrevTaskMsg struct {
+	CurrentID string
+}
