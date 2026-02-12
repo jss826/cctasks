@@ -305,13 +305,21 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 			}
 
 			// Calculate scroll offset (same logic as View)
-			maxVisible := m.height - 15
-			if maxVisible < 5 {
-				maxVisible = 10
+			maxLines := m.height - 15
+			if maxLines < 5 {
+				maxLines = 10
 			}
 			startIdx := 0
-			if m.cursor >= maxVisible {
-				startIdx = m.cursor - maxVisible + 1
+			{
+				lines := 0
+				for i := m.cursor; i >= 0; i-- {
+					l := m.itemLineCount(i)
+					if lines+l > maxLines {
+						break
+					}
+					lines += l
+					startIdx = i
+				}
 			}
 
 			// Add scroll indicator line if present
@@ -319,9 +327,20 @@ func (m TasksModel) Update(msg tea.Msg) (TasksModel, tea.Cmd) {
 				headerLines++
 			}
 
+			// Map clicked row to item index, accounting for multi-line items
 			clickedRow := msg.Y - headerLines
 			if clickedRow >= 0 {
-				clickedIdx := startIdx + clickedRow
+				clickedIdx := -1
+				lineAcc := 0
+				for i := startIdx; i < len(m.items); i++ {
+					lc := m.itemLineCount(i)
+					if clickedRow >= lineAcc && clickedRow < lineAcc+lc {
+						clickedIdx = i
+						break
+					}
+					lineAcc += lc
+				}
+
 				if clickedIdx >= 0 && clickedIdx < len(m.items) {
 					now := time.Now()
 					isDoubleClick := clickedIdx == m.lastClickIdx && now.Sub(m.lastClickTime) < 400*time.Millisecond
@@ -570,19 +589,38 @@ func (m TasksModel) View() string {
 		b.WriteString("\n")
 	}
 
-	// Calculate visible area
-	maxVisible := m.height - 15
-	if maxVisible < 5 {
-		maxVisible = 10
+	// Calculate visible area (in lines, not items)
+	maxLines := m.height - 15
+	if maxLines < 5 {
+		maxLines = 10
 	}
 
+	// Find startIdx: walk backward from cursor to fill viewport
 	startIdx := 0
-	if m.cursor >= maxVisible {
-		startIdx = m.cursor - maxVisible + 1
+	{
+		lines := 0
+		for i := m.cursor; i >= 0; i-- {
+			l := m.itemLineCount(i)
+			if lines+l > maxLines {
+				break
+			}
+			lines += l
+			startIdx = i
+		}
 	}
-	endIdx := startIdx + maxVisible
-	if endIdx > len(m.items) {
-		endIdx = len(m.items)
+
+	// Find endIdx: walk forward from startIdx to fill viewport
+	endIdx := startIdx
+	{
+		lines := 0
+		for i := startIdx; i < len(m.items); i++ {
+			l := m.itemLineCount(i)
+			if lines+l > maxLines {
+				break
+			}
+			lines += l
+			endIdx = i + 1
+		}
 	}
 
 	// Scroll indicator - top
@@ -636,6 +674,18 @@ func (m TasksModel) View() string {
 	b.WriteString(ui.FooterWithHints(hints, m.width))
 
 	return b.String()
+}
+
+// itemLineCount returns the number of display lines an item at index i takes
+func (m *TasksModel) itemLineCount(i int) int {
+	item := m.items[i]
+	if item.isGroup {
+		return 1
+	}
+	if item.task != nil && len(item.task.BlockedBy) > 0 {
+		return 2 // task line + "blocked by" line
+	}
+	return 1
 }
 
 func (m *TasksModel) renderGroupHeader(groupName string, selected bool) string {
