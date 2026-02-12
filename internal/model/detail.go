@@ -20,6 +20,9 @@ type DetailModel struct {
 
 	// Delete confirmation
 	confirmDelete bool
+
+	// Scrolling
+	scrollOffset int
 }
 
 // NewDetailModel creates a new DetailModel
@@ -58,6 +61,18 @@ func (m DetailModel) Update(msg tea.Msg) (DetailModel, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			m.scrollOffset -= 3
+			m.clampScroll()
+			return m, nil
+		case tea.MouseButtonWheelDown:
+			m.scrollOffset += 3
+			m.clampScroll()
+			return m, nil
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc", "left":
@@ -74,6 +89,20 @@ func (m DetailModel) Update(msg tea.Msg) (DetailModel, tea.Cmd) {
 			return m, func() tea.Msg {
 				return PrevTaskMsg{CurrentID: taskID}
 			}
+		case "pgdown":
+			m.scrollOffset += m.viewportHeight()
+			m.clampScroll()
+			return m, nil
+		case "pgup":
+			m.scrollOffset -= m.viewportHeight()
+			m.clampScroll()
+			return m, nil
+		case "home":
+			m.scrollOffset = 0
+			return m, nil
+		case "end":
+			m.scrollOffset = m.maxScroll()
+			return m, nil
 		case "e":
 			return m, func() tea.Msg {
 				return EditTaskMsg{Task: m.task}
@@ -105,14 +134,9 @@ func (m *DetailModel) cycleStatus() {
 	}
 }
 
-// View renders the task detail screen
-func (m DetailModel) View() string {
+// buildBody builds the scrollable body content (everything between header and footer)
+func (m DetailModel) buildBody() string {
 	var b strings.Builder
-
-	// Header (subtract 4 for AppStyle padding)
-	title := fmt.Sprintf("Task #%s", m.task.ID)
-	b.WriteString(ui.Header(title, m.width))
-	b.WriteString("\n\n")
 
 	// Delete confirmation dialog
 	if m.confirmDelete {
@@ -204,16 +228,118 @@ func (m DetailModel) View() string {
 	} else {
 		b.WriteString(ui.MutedStyle.Render("(none)"))
 	}
-	b.WriteString("\n")
+
+	return b.String()
+}
+
+// viewportHeight returns the number of lines available for body content
+func (m DetailModel) viewportHeight() int {
+	// header: 2 lines (title + horizontal line) + 1 empty line = 3
+	// footer: 1 horizontal line + 1-2 hint lines = 2-3
+	// scroll indicators: up to 2 lines
+	overhead := 8
+	vh := m.height - overhead
+	if vh < 5 {
+		vh = 5
+	}
+	return vh
+}
+
+// maxScroll returns the maximum valid scroll offset
+func (m DetailModel) maxScroll() int {
+	body := m.buildBody()
+	lines := strings.Split(body, "\n")
+	vh := m.viewportHeight()
+	if len(lines) <= vh {
+		return 0
+	}
+	return len(lines) - vh
+}
+
+// clampScroll ensures scrollOffset is within valid bounds
+func (m *DetailModel) clampScroll() {
+	max := m.maxScroll()
+	if m.scrollOffset > max {
+		m.scrollOffset = max
+	}
+	if m.scrollOffset < 0 {
+		m.scrollOffset = 0
+	}
+}
+
+// View renders the task detail screen
+func (m DetailModel) View() string {
+	var result strings.Builder
+
+	// Header
+	title := fmt.Sprintf("Task #%s", m.task.ID)
+	result.WriteString(ui.Header(title, m.width))
+	result.WriteString("\n\n")
+
+	// Build body content
+	body := m.buildBody()
+	bodyLines := strings.Split(body, "\n")
+	totalLines := len(bodyLines)
+	vh := m.viewportHeight()
+
+	// Clamp scroll offset for display
+	scrollOffset := m.scrollOffset
+	maxOff := 0
+	if totalLines > vh {
+		maxOff = totalLines - vh
+	}
+	if scrollOffset > maxOff {
+		scrollOffset = maxOff
+	}
+	if scrollOffset < 0 {
+		scrollOffset = 0
+	}
+
+	needsScroll := totalLines > vh
+
+	if !needsScroll {
+		// Everything fits, no scrolling needed
+		result.WriteString(body)
+		result.WriteString("\n")
+	} else {
+		// Top scroll indicator
+		if scrollOffset > 0 {
+			result.WriteString(ui.MutedStyle.Render(fmt.Sprintf("  ↑ %d lines above", scrollOffset)))
+			result.WriteString("\n")
+		}
+
+		// Visible slice
+		endIdx := scrollOffset + vh
+		if scrollOffset > 0 {
+			endIdx-- // account for top indicator line
+		}
+		remaining := totalLines - endIdx
+		if remaining > 0 {
+			endIdx-- // account for bottom indicator line
+		}
+		if endIdx > totalLines {
+			endIdx = totalLines
+		}
+
+		visibleLines := bodyLines[scrollOffset:endIdx]
+		result.WriteString(strings.Join(visibleLines, "\n"))
+		result.WriteString("\n")
+
+		// Bottom scroll indicator
+		remaining = totalLines - endIdx
+		if remaining > 0 {
+			result.WriteString(ui.MutedStyle.Render(fmt.Sprintf("  ↓ %d lines below", remaining)))
+			result.WriteString("\n")
+		}
+	}
 
 	// Footer - context-aware
-	b.WriteString("\n")
 	if m.confirmDelete {
 		hints := []ui.KeyHint{
 			{Key: "y", Desc: "Confirm", Enabled: true},
 			{Key: "n", Desc: "Cancel", Enabled: true},
 		}
-		b.WriteString(ui.FooterWithHints(hints, m.width))
+		result.WriteString(ui.FooterWithHints(hints, m.width))
 	} else {
 		hints := []ui.KeyHint{
 			// Navigation
@@ -223,11 +349,13 @@ func (m DetailModel) View() string {
 			{Key: "e", Desc: "Edit", Enabled: true},
 			{Key: "s", Desc: "Status", Enabled: true},
 			{Key: "d", Desc: "Delete", Enabled: true},
-			// Exit
-			{Key: "q", Desc: "Quit", Enabled: true},
 		}
-		b.WriteString(ui.FooterWithHints(hints, m.width))
+		if needsScroll {
+			hints = append(hints, ui.KeyHint{Key: "PgUp/Dn", Desc: "Scroll", Enabled: true})
+		}
+		hints = append(hints, ui.KeyHint{Key: "q", Desc: "Quit", Enabled: true})
+		result.WriteString(ui.FooterWithHints(hints, m.width))
 	}
 
-	return b.String()
+	return result.String()
 }
